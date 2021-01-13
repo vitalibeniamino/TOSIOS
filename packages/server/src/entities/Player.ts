@@ -1,11 +1,17 @@
-import { Maths, Types } from '@tosios/common';
-import { Circle } from './Circle';
+import { Circle, ICircle } from './Circle';
+import { Maths } from '@tosios/common';
 import { type } from '@colyseus/schema';
 
-export class Player extends Circle {
-    @type('string')
-    public playerId: string;
+export interface IPlayer extends ICircle {
+    name: string;
+    lives: number;
+    maxLives: number;
+}
 
+export class Player extends Circle {
+    //
+    // Public fields
+    //
     @type('string')
     public name: string;
 
@@ -15,48 +21,33 @@ export class Player extends Circle {
     @type('number')
     public maxLives: number;
 
-    @type('string')
-    public team: Types.Teams;
-
-    @type('string')
-    public color: string;
-
     @type('number')
     public kills: number;
 
     @type('number')
-    public rotation: number;
-
-    @type('number')
     public ack: number;
 
-    // This property is needed to limit shooting rate
+    //
+    // Private fields
+    //
     public lastShootAt: number;
 
-    // Init
-    constructor(
-        playerId: string,
-        x: number,
-        y: number,
-        radius: number,
-        lives: number,
-        maxLives: number,
-        name: string,
-        team?: Types.Teams,
-    ) {
-        super(x, y, radius);
-        this.playerId = playerId;
-        this.lives = lives;
-        this.maxLives = maxLives;
-        this.name = validateName(name);
-        this.team = team;
-        this.color = team ? getTeamColor(team) : '#FFFFFF';
+    //
+    // Lifecycle
+    //
+    constructor(attributes: IPlayer) {
+        super(attributes);
+        this.name = validateName(attributes.name);
+        this.lives = attributes.lives;
+        this.maxLives = attributes.maxLives;
         this.kills = 0;
-        this.rotation = 0;
+        this.ack = 0;
         this.lastShootAt = undefined;
     }
 
+    //
     // Methods
+    //
     move(dirX: number, dirY: number, speed: number) {
         const magnitude = Maths.normalize2D(dirX, dirY);
 
@@ -75,23 +66,21 @@ export class Player extends Circle {
         this.lives += 1;
     }
 
-    canBulletHurt(otherPlayerId: string, team?: string): boolean {
+    canBulletHurt(otherPlayerId: string): boolean {
         if (!this.isAlive) {
             return false;
         }
 
-        if (this.playerId === otherPlayerId) {
-            return false;
-        }
-
-        if (!!team && team === this.team) {
+        if (this.id === otherPlayerId) {
             return false;
         }
 
         return true;
     }
 
+    //
     // Getters
+    //
     get isAlive(): boolean {
         return this.lives > 0;
     }
@@ -100,7 +89,9 @@ export class Player extends Circle {
         return this.lives === this.maxLives;
     }
 
+    //
     // Setters
+    //
     setPosition(x: number, y: number) {
         this.x = x;
         this.y = y;
@@ -123,15 +114,9 @@ export class Player extends Circle {
         this.name = validateName(name);
     }
 
-    setTeam(team: Types.Teams) {
-        this.team = team;
-        this.color = getTeamColor(team);
-    }
-
     setKills(kills: number) {
         this.kills = kills;
     }
 }
 
 const validateName = (name: string) => name.trim().slice(0, 16);
-const getTeamColor = (team: Types.Teams) => (team === 'Blue' ? '#0000FF' : '#FF0000');

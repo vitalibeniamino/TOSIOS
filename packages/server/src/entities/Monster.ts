@@ -1,22 +1,33 @@
-import { Constants, Maths } from '@tosios/common';
+import { Circle, ICircle } from './Circle';
+import { Constants, Maths, Models } from '@tosios/common';
 import { MapSchema, type } from '@colyseus/schema';
-import { Circle } from './Circle';
 import { Player } from '.';
 
-type MonsterState = 'idle' | 'patrol' | 'chase';
+export interface IMonster extends ICircle {
+    type: Models.MonsterType;
+    mapWidth: number;
+    mapHeight: number;
+    lives: number;
+}
 
 export class Monster extends Circle {
-    @type('number')
-    private rotation: number = 0;
+    //
+    // Public fields
+    //
+    @type('string')
+    private type: Models.MonsterType;
 
-    // Hidden properties
+    @type('string')
+    private state: Models.MonsterState;
+
+    //
+    // Private fields
+    //
     private mapWidth: number;
 
     private mapHeight: number;
 
     private lives: number = 0;
-
-    private state: MonsterState = 'idle';
 
     private lastActionAt: number = Date.now();
 
@@ -28,16 +39,22 @@ export class Monster extends Circle {
 
     private targetPlayerId: string = null;
 
-    // Init
-    constructor(x: number, y: number, radius: number, mapWidth: number, mapHeight: number, lives: number) {
-        super(x, y, radius);
+    //
+    // Lifecycle
+    //
+    constructor(attributes: IMonster) {
+        super(attributes);
 
-        this.mapWidth = mapWidth;
-        this.mapHeight = mapHeight;
-        this.lives = lives;
+        this.type = attributes.type;
+        this.state = 'idle';
+        this.mapWidth = attributes.mapWidth;
+        this.mapHeight = attributes.mapHeight;
+        this.lives = attributes.lives;
     }
 
+    //
     // Update
+    //
     update(players: MapSchema<Player>) {
         switch (this.state) {
             case 'idle':
@@ -116,7 +133,9 @@ export class Monster extends Circle {
         this.move(Constants.MONSTER_SPEED_CHASE, this.rotation);
     }
 
-    // States
+    //
+    // Start
+    //
     startIdle() {
         this.state = 'idle';
         this.rotation = 0;
@@ -145,7 +164,9 @@ export class Monster extends Circle {
         this.lastActionAt = Date.now();
     }
 
+    //
     // Methods
+    //
     lookForPlayer(players: MapSchema<Player>): boolean {
         if (!this.targetPlayerId) {
             const playerId = getClosestPlayerId(this.x, this.y, players);
@@ -171,7 +192,9 @@ export class Monster extends Circle {
         this.lastAttackAt = Date.now();
     }
 
+    //
     // Getters
+    //
     get isAlive(): boolean {
         return this.lives > 0;
     }
@@ -182,6 +205,9 @@ export class Monster extends Circle {
     }
 }
 
+//
+// Utils
+//
 function getPlayerFromId(id: string, players: MapSchema<Player>): Player | null {
     return players.get(id);
 }

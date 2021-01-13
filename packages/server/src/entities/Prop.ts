@@ -1,19 +1,29 @@
 import { Circle } from '.';
+import { ICircle } from './Circle';
 import { Models } from '@tosios/common';
 import { type } from '@colyseus/schema';
 
+export interface IMonster extends ICircle {
+    type: Models.PropType;
+}
+
 export class Prop extends Circle {
+    //
+    // Public fields
+    //
     @type('string')
     public type: Models.PropType;
 
     @type('boolean')
     public active: boolean;
 
-    // Init
-    constructor(propType: Models.PropType, x: number, y: number, radius: number) {
-        super(x, y, radius);
+    //
+    // Lifecycle
+    //
+    constructor(attributes: IMonster) {
+        super(attributes);
 
-        this.type = propType;
+        this.type = attributes.type;
         this.active = true;
     }
 }

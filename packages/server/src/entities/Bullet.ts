@@ -1,15 +1,18 @@
-import { Circle } from './Circle';
+import { Circle, ICircle } from './Circle';
 import { type } from '@colyseus/schema';
 
+export interface IBullet extends ICircle {
+    playerId: string;
+    rotation: number;
+    shotAt: number;
+}
+
 export class Bullet extends Circle {
+    //
+    // Public fields
+    //
     @type('string')
     public playerId: string;
-
-    @type('string')
-    public team: string;
-
-    @type('number')
-    public rotation: number;
 
     @type('number')
     public fromX: number;
@@ -20,60 +23,39 @@ export class Bullet extends Circle {
     @type('boolean')
     public active: boolean;
 
-    @type('string')
-    public color: string;
-
     @type('number')
     public shotAt: number;
 
-    // Init
-    constructor(
-        playerId: string,
-        team: string,
-        x: number,
-        y: number,
-        radius: number,
-        rotation: number,
-        color: string,
-        shotAt: number,
-    ) {
-        super(x, y, radius);
-        this.playerId = playerId;
-        this.team = team;
-        this.rotation = rotation;
-        this.fromX = x;
-        this.fromY = y;
+    //
+    // Lifecycle
+    //
+    constructor(attributes: IBullet) {
+        super(attributes);
+        this.playerId = attributes.playerId;
+        this.fromX = attributes.x;
+        this.fromY = attributes.y;
         this.active = true;
-        this.color = color;
-        this.shotAt = shotAt;
+        this.shotAt = attributes.shotAt;
     }
 
+    //
     // Methods
+    //
     move(speed: number) {
         this.x += Math.cos(this.rotation) * speed;
         this.y += Math.sin(this.rotation) * speed;
     }
 
-    reset(
-        playerId: string,
-        team: string,
-        x: number,
-        y: number,
-        radius: number,
-        rotation: number,
-        color: string,
-        shotAt: number,
-    ) {
-        this.playerId = playerId;
-        this.team = team;
-        this.fromX = x;
-        this.fromY = y;
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-        this.rotation = rotation;
+    reset(attributes: IBullet) {
+        this.id = attributes.id;
+        this.x = attributes.x;
+        this.y = attributes.y;
+        this.radius = attributes.radius;
+        this.rotation = attributes.rotation;
+        this.playerId = attributes.playerId;
+        this.fromX = attributes.x;
+        this.fromY = attributes.y;
         this.active = true;
-        this.color = color;
-        this.shotAt = shotAt;
+        this.shotAt = attributes.shotAt;
     }
 }

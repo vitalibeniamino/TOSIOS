@@ -1,19 +1,12 @@
 import { CircleBody } from '../geometry';
+import { CircleJSON } from './Circle';
 import { Maths } from '..';
-import { Teams } from '../types';
 import { TreeCollider } from '../collisions';
 
-export interface PlayerJSON {
-    x: number;
-    y: number;
-    radius: number;
-    rotation: number;
-    playerId: string;
+export interface PlayerJSON extends CircleJSON {
     name: string;
     lives: number;
     maxLives: number;
-    team?: Teams;
-    color: string;
     kills: number;
     ack?: number;
 }

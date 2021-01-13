@@ -1,15 +1,9 @@
-import { Teams } from '../types';
+import { CircleJSON } from './Circle';
 
-export interface BulletJSON {
-    x: number;
-    y: number;
-    radius: number;
-    rotation: number;
-    active: boolean;
+export interface BulletJSON extends CircleJSON {
+    playerId: string;
     fromX: number;
     fromY: number;
+    active: boolean;
     shotAt: number;
-    playerId: string;
-    team?: Teams;
-    color: string;
 }

@@ -5,6 +5,7 @@
     "main": "build/index.js",
     "typings": "build/index.d.ts",
     "dependencies": {
+        "@halftheopposite/dungeon": "^0.2.2",
         "rbush": "^3.0.1"
     },
     "devDependencies": {

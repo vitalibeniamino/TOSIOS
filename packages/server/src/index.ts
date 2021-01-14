@@ -3,7 +3,7 @@ import * as cors from 'cors';
 import * as express from 'express';
 import { MonitorOptions, monitor } from '@colyseus/monitor';
 import { Constants } from '@tosios/common';
-import { GameRoom } from './rooms/GameRoom';
+import { GameRoom } from './Room';
 import { Server } from 'colyseus';
 import { createServer } from 'http';
 import { join } from 'path';

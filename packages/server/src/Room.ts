@@ -1,6 +1,6 @@
 import { Client, Room } from 'colyseus';
 import { Constants, Maths, Models, Types } from '@tosios/common';
-import { GameState } from '../states/GameState';
+import { GameState } from './State';
 
 export class GameRoom extends Room<GameState> {
     //
@@ -21,18 +21,23 @@ export class GameRoom extends Room<GameState> {
         this.setMetadata({
             playerName,
             roomName,
-            roomMap: options.roomMap,
             roomMaxPlayers: this.maxClients,
             mode: options.mode,
         });
 
         // Init State
-        this.setState(new GameState(roomName, options.roomMap, this.maxClients, options.mode, this.handleMessage));
+        this.setState(
+            new GameState({
+                roomName,
+                maxPlayers: this.maxClients,
+                onMessage: this.handleMessage,
+            }),
+        );
 
         this.setSimulationInterval(() => this.handleTick());
 
         console.log(
-            `${new Date().toISOString()} [Create] player=${playerName} room=${roomName} map=${options.roomMap} max=${
+            `${new Date().toISOString()} [Created] player=${playerName} room=${roomName} map=${options.roomMap} max=${
                 this.maxClients
             } mode=${options.mode}`,
         );
@@ -59,14 +64,12 @@ export class GameRoom extends Room<GameState> {
 
     onJoin(client: Client, options: Types.IPlayerOptions) {
         this.state.playerAdd(client.sessionId, options.playerName);
-
-        console.log(`${new Date().toISOString()} [Join] id=${client.sessionId} player=${options.playerName}`);
+        console.log(`${new Date().toISOString()} [Joined] id=${client.sessionId} player=${options.playerName}`);
     }
 
     onLeave(client: Client) {
         this.state.playerRemove(client.sessionId);
-
-        console.log(`${new Date().toISOString()} [Leave] id=${client.sessionId}`);
+        console.log(`${new Date().toISOString()} [Left] id=${client.sessionId}`);
     }
 
     //

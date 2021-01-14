@@ -3,10 +3,8 @@ import { MapSchema, Schema, type } from '@colyseus/schema';
 import { Player } from './Player';
 
 export interface IGame {
-    state: Types.GameState;
     roomName: string;
     maxPlayers: number;
-    seed: string;
     onLobbyStart: (message?: Models.MessageJSON) => void;
     onGameStart: (message?: Models.MessageJSON) => void;
     onGameEnd: (message?: Models.MessageJSON) => void;
@@ -48,10 +46,9 @@ export class Game extends Schema {
     //
     constructor(attributes: IGame) {
         super();
-        this.state = attributes.state;
+        this.state = 'lobby';
         this.roomName = attributes.roomName;
         this.maxPlayers = attributes.maxPlayers;
-        this.seed = attributes.seed;
         this.onLobbyStart = attributes.onLobbyStart;
         this.onGameStart = attributes.onGameStart;
         this.onGameEnd = attributes.onGameEnd;

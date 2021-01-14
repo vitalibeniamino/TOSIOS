@@ -1,6 +1,5 @@
-import { Entity } from '.';
+import { Entity, IEntity } from './Entity';
 import { Geometry } from '@tosios/common';
-import { IEntity } from './Entity';
 import { type } from '@colyseus/schema';
 
 export interface ICircle extends IEntity {

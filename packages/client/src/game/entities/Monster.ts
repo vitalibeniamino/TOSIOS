@@ -42,7 +42,7 @@ export class Monster extends Circle {
             y: monster.y,
             radius: monster.radius,
             rotation: monster.rotation,
-            textures: [MonstersTextures.sprites[monster.type]],
+            textures: MonstersTextures.sprites[monster.type].idle,
             zIndex: ZINDEXES.MONSTER,
         });
 

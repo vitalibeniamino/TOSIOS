@@ -22,20 +22,20 @@ import { RoomAvailable } from 'colyseus.js/lib/Room';
 import qs from 'querystringify';
 import { useAnalytics } from '../hooks';
 
-const MapsList: IListItem[] = Constants.MAPS_NAMES.map((value) => ({
-    value,
-    title: value,
-}));
+// const MapsList: IListItem[] = Constants.MAPS_NAMES.map((value) => ({
+//     value,
+//     title: value,
+// }));
 
 const PlayersCountList: IListItem[] = Constants.ROOM_PLAYERS_SCALES.map((value) => ({
     value,
     title: `${value} players`,
 }));
 
-const GameModesList: IListItem[] = Constants.GAME_MODES.map((value) => ({
-    value,
-    title: value,
-}));
+// const GameModesList: IListItem[] = Constants.GAME_MODES.map((value) => ({
+//     value,
+//     title: value,
+// }));
 
 interface IProps extends RouteComponentProps {}
 
@@ -44,9 +44,9 @@ interface IState {
     hasNameChanged: boolean;
     isNewRoom: boolean;
     roomName: string;
-    roomMap: any;
+    // roomMap: any;
     roomMaxPlayers: any;
-    mode: any;
+    // mode: any;
     rooms: Array<RoomAvailable<any>>;
     timer: NodeJS.Timeout | null;
 }
@@ -62,9 +62,9 @@ export default class Home extends Component<IProps, IState> {
             hasNameChanged: false,
             isNewRoom: false,
             roomName: localStorage.getItem('roomName') || '',
-            roomMap: MapsList[0].value,
+            // roomMap: MapsList[0].value,
             roomMaxPlayers: PlayersCountList[0].value,
-            mode: GameModesList[0].value,
+            // mode: GameModesList[0].value,
             rooms: [],
             timer: null,
         };
@@ -137,15 +137,16 @@ export default class Home extends Component<IProps, IState> {
     };
 
     handleCreateRoomClick = () => {
-        const { playerName, roomName, roomMap, roomMaxPlayers, mode } = this.state;
+        // const { playerName, roomName, roomMap, roomMaxPlayers, mode } = this.state;
+        const { playerName, roomName, roomMaxPlayers } = this.state;
         const analytics = useAnalytics();
 
         const options: Types.IRoomOptions = {
             playerName,
             roomName,
-            roomMap,
+            // roomMap,
             roomMaxPlayers,
-            mode,
+            // mode,
         };
 
         analytics.track({ category: 'Game', action: 'Create' });
@@ -267,7 +268,8 @@ export default class Home extends Component<IProps, IState> {
     };
 
     renderNewRoom = () => {
-        const { isNewRoom, roomName, roomMap, roomMaxPlayers, mode } = this.state;
+        // const { isNewRoom, roomName, roomMap, roomMaxPlayers, mode } = this.state;
+        const { isNewRoom, roomName, roomMaxPlayers } = this.state;
         const analytics = useAnalytics();
 
         return (
@@ -299,7 +301,7 @@ export default class Home extends Component<IProps, IState> {
                         <Space size="s" />
 
                         {/* Map */}
-                        <Text>Map:</Text>
+                        {/* <Text>Map:</Text>
                         <Space size="xxs" />
                         <Select
                             value={roomMap}
@@ -313,7 +315,7 @@ export default class Home extends Component<IProps, IState> {
                                 });
                             }}
                         />
-                        <Space size="s" />
+                        <Space size="s" /> */}
 
                         {/* Players */}
                         <Text>Max players:</Text>
@@ -333,7 +335,7 @@ export default class Home extends Component<IProps, IState> {
                         <Space size="s" />
 
                         {/* Mode */}
-                        <Text>Game mode:</Text>
+                        {/* <Text>Game mode:</Text>
                         <Space size="xxs" />
                         <Select
                             value={mode}
@@ -347,7 +349,7 @@ export default class Home extends Component<IProps, IState> {
                                 });
                             }}
                         />
-                        <Space size="s" />
+                        <Space size="s" /> */}
 
                         {/* Button */}
                         <View>
@@ -382,18 +384,18 @@ export default class Home extends Component<IProps, IState> {
         }
 
         return rooms.map(({ roomId, metadata, clients, maxClients }, index) => {
-            const map = MapsList.find((item) => item.value === metadata.roomMap);
-            const mapName = map ? map.title : metadata.roomMap;
+            // const map = MapsList.find((item) => item.value === metadata.roomMap);
+            // const mapName = map ? map.title : metadata.roomMap;
 
             return (
                 <Fragment key={roomId}>
                     <Room
                         id={roomId}
                         roomName={metadata.roomName}
-                        roomMap={mapName}
+                        // roomMap={mapName}
                         clients={clients}
                         maxClients={maxClients}
-                        mode={metadata.mode}
+                        // mode={metadata.mode}
                         onClick={this.handleRoomClick}
                     />
                     {index !== rooms.length - 1 && <Space size="xxs" />}

@@ -1,14 +1,13 @@
-import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
+import { Application, Container, Graphics, SCALE_MODES, settings, utils } from 'pixi.js';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
-import { Collisions, Constants, Entities, Geometry, Maps, Maths, Models, Tiled, Types } from '@tosios/common';
+import { Constants, Geometry, Maps, Maths, Models } from '@tosios/common';
+import { DungeonMap, generate } from '@halftheopposite/dungeon';
+import { Game, Monster, Player, Prop } from './entities';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
-import { Monster, Player, Prop } from './entities';
-import { getSpritesLayer, getTexturesSet } from './utils/tiled';
 import { Emitter } from 'pixi-particles';
-import { Inputs } from './utils/inputs';
-import { SpriteSheets } from './assets/images/maps';
-import { Viewport } from 'pixi-viewport';
 import { GUITextures } from './assets/images';
+import { Inputs } from './utils/inputs';
+import { Viewport } from 'pixi-viewport';
 import { distanceBetween } from './utils/distance';
 
 // We don't want to scale textures linearly because they would appear blurry.
@@ -31,10 +30,8 @@ const TOREMOVE_MAX_FPS_MS = 1000 / 60;
 const TOREMOVE_AVG_LAG = 50;
 
 export interface Stats {
-    gameMode: string;
-    gameModeEndsAt: number;
-    gameMap: string;
-    roomName: string;
+    stateEndsAt: number;
+    roomName?: string;
     playerName: string;
     playerLives: number;
     playerMaxLives: number;
@@ -43,24 +40,29 @@ export interface Stats {
     playersMaxCount: number;
 }
 
+export interface IGameState {
+    screenWidth: number;
+    screenHeight: number;
+    onActionSend: (action: Models.ActionJSON) => void;
+}
+
 /**
  * The main entrypoint for the game logic on the client-side.
  */
-export class Game {
-    public inputs: Inputs = new Inputs();
+export class GameState {
+    //
+    // Public fields
+    //
+    private game: Game;
 
-    // Inputs
-    public forcedRotation: number = 0; // Used on mobile only
-
-    // Callbacks
-    private onActionSend: (action: Models.ActionJSON) => void;
-
-    // Application
+    //
+    // Private fields
+    //
     private app: Application;
 
-    private map: Entities.Map;
-
     private viewport: Viewport;
+
+    private tilesContainer: Container;
 
     private particlesContainer: Container;
 
@@ -72,59 +74,55 @@ export class Game {
 
     private bulletsManager: BulletsManager;
 
-    // Collisions
-    private walls: Collisions.TreeCollider;
+    private onActionSend: (action: Models.ActionJSON) => void;
 
-    // Game
-    private roomName?: string;
+    private me: Player | null;
 
-    private mapName?: string;
+    private moveActions: Models.ActionJSON[];
 
-    private maxPlayers: number = 0;
+    private inputs: Inputs;
 
-    private state: string | null = null;
+    private map: DungeonMap;
 
-    private lobbyEndsAt: number = 0;
+    //
+    // Lifecycle
+    //
+    constructor(attributes: IGameState) {
+        this.game = new Game({
+            state: 'lobby',
+            stateEndsAt: 0,
+            roomName: '',
+            maxPlayers: 0,
+        });
 
-    private gameEndsAt: number = 0;
-
-    private mode?: Types.GameMode;
-
-    // Me (the one playing the game on his computer)
-    private me: Player | null = null;
-
-    // Server reconciliation
-    private moveActions: Models.ActionJSON[] = [];
-
-    // LIFECYCLE
-    constructor(screenWidth: number, screenHeight: number, onActionSend: any) {
         // App
         this.app = new Application({
-            width: screenWidth,
-            height: screenHeight,
+            width: attributes.screenWidth,
+            height: attributes.screenHeight,
             antialias: false,
             backgroundColor: utils.string2hex(Constants.BACKGROUND_COLOR),
             autoDensity: true,
             resolution: window.devicePixelRatio,
         });
 
-        // Map
-        this.map = new Entities.Map(0, 0);
-
-        // Viewport
-        this.viewport = new Viewport({
-            screenWidth,
-            screenHeight,
-        });
-        this.app.stage.addChild(this.viewport);
-
         // Cursor
         const defaultIcon = `url('${GUITextures.crosshairIco}') 32 32, auto`;
         this.app.renderer.plugins.interaction.cursor = 'default';
         this.app.renderer.plugins.interaction.cursorStyles.default = defaultIcon;
 
-        // Walls R-Tree
-        this.walls = new Collisions.TreeCollider();
+        // Viewport
+        this.viewport = new Viewport({
+            screenWidth: attributes.screenWidth,
+            screenHeight: attributes.screenHeight,
+        });
+        this.viewport.zoomPercent(utils.isMobile.any ? 0.25 : 1.0);
+        this.viewport.sortableChildren = true;
+        this.app.stage.addChild(this.viewport);
+
+        // Tiles
+        this.tilesContainer = new Container();
+        this.tilesContainer.zIndex = ZINDEXES.GROUND;
+        this.viewport.addChild(this.tilesContainer);
 
         // Particles
         this.particlesContainer = new Container();
@@ -151,12 +149,16 @@ export class Game {
         this.bulletsManager.zIndex = ZINDEXES.BULLETS;
         this.viewport.addChild(this.bulletsManager);
 
-        // Viewport
-        this.viewport.zoomPercent(utils.isMobile.any ? 0.25 : 1.0);
-        this.viewport.sortableChildren = true;
-
         // Callbacks
-        this.onActionSend = onActionSend;
+        this.onActionSend = attributes.onActionSend;
+
+        //
+        // Others
+        //
+        this.me = null;
+        this.moveActions = [];
+        this.inputs = new Inputs();
+        this.map = new DungeonMap(Constants.TILE_SIZE);
     }
 
     start = (renderView: any) => {
@@ -215,8 +217,10 @@ export class Game {
         for (const player of this.playersManager.getAll()) {
             distance = Maths.getDistance(player.x, player.y, player.toX, player.toY);
             if (distance > 0.01) {
-                player.x = Maths.lerp(player.x, player.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG);
-                player.y = Maths.lerp(player.y, player.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG);
+                player.setPosition(
+                    Maths.lerp(player.x, player.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
+                    Maths.lerp(player.y, player.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
+                );
             }
         }
     };
@@ -241,58 +245,55 @@ export class Game {
 
             bullet.move(Constants.BULLET_SPEED);
 
+            //
             // Collisions: Players
-            for (const player of this.playersManager.getAll()) {
-                // Check if the bullet can hurt the player
-                if (
-                    !player.canBulletHurt(bullet.playerId, bullet.team) ||
-                    !Collisions.circleToCircle(bullet.body, player.body)
-                ) {
-                    continue;
-                }
+            //
+            // for (const player of this.playersManager.getAll()) {
+            //     // Check if the bullet can hurt the player
+            //     if (!player.canBulletHurt(bullet.playerId) || !Collisions.circleToCircle(bullet.body, player.body)) {
+            //         continue;
+            //     }
 
-                bullet.kill(distanceBetween(this.me?.body, bullet.body));
-                player.hurt();
-                this.spawnImpact(bullet.x, bullet.y);
-                continue;
-            }
+            //     bullet.kill(distanceBetween(this.me?.body, bullet.body));
+            //     player.hurt();
+            //     this.spawnImpact(bullet.x, bullet.y);
+            //     continue;
+            // }
 
+            //
             // Collisions: Me
-            if (
-                this.me &&
-                this.me.canBulletHurt(bullet.playerId, bullet.team) &&
-                this.me.lives &&
-                Collisions.circleToCircle(bullet.body, this.me.body)
-            ) {
-                bullet.kill(distanceBetween(this.me?.body, bullet.body));
-                this.me.hurt();
-                this.spawnImpact(bullet.x, bullet.y);
-                continue;
-            }
+            //
+            // if (
+            //     this.me &&
+            //     this.me.canBulletHurt(bullet.playerId) &&
+            //     this.me.lives &&
+            //     Collisions.circleToCircle(bullet.body, this.me.body)
+            // ) {
+            //     bullet.kill(distanceBetween(this.me?.body, bullet.body));
+            //     this.me.hurt();
+            //     this.spawnImpact(bullet.x, bullet.y);
+            //     continue;
+            // }
 
+            //
             // Collisions: Monsters
-            for (const monster of this.monstersManager.getAll()) {
-                if (!Collisions.circleToCircle(bullet.body, monster.body)) {
-                    continue;
-                }
-
+            //
+            const collidingMonsters = this.map.collidesByLayer(bullet.id, 'monsters');
+            if (collidingMonsters.length > 0) {
+                const firstMonster = collidingMonsters[0];
                 bullet.kill(distanceBetween(this.me?.body, bullet.body));
-                monster.hurt();
+                this.monstersManager.get(firstMonster.id)?.hurt();
                 this.spawnImpact(bullet.x, bullet.y);
                 continue;
             }
 
+            //
             // Collisions: Walls
-            if (this.walls.collidesWithCircle(bullet.body, 'half')) {
+            //
+            const collidingWalls = this.map.collidesByLayer(bullet.id, 'tiles');
+            if (collidingWalls.length > 0) {
                 bullet.kill(distanceBetween(this.me?.body, bullet.body));
                 this.spawnImpact(bullet.x, bullet.y);
-                continue;
-            }
-
-            // Collisions: Map
-            if (this.map.isCircleOutside(bullet.body)) {
-                bullet.kill(distanceBetween(this.me?.body, bullet.body));
-                this.spawnImpact(Maths.clamp(bullet.x, 0, this.map.width), Maths.clamp(bullet.y, 0, this.map.height));
                 continue;
             }
         }
@@ -304,45 +305,9 @@ export class Game {
         this.inputs.stop();
     };
 
-    // METHODS
-    private initializeMap = (mapName: string) => {
-        // Don't do anything if map is already set
-        if (this.mapName) {
-            return;
-        }
-
-        this.mapName = mapName;
-
-        // Parse the selected map
-        const data = Maps.List[this.mapName];
-        const tiledMap = new Tiled.Map(data, Constants.TILE_SIZE);
-
-        // Set the map boundaries
-        this.map.setDimensions(tiledMap.widthInPixels, tiledMap.heightInPixels);
-
-        // Collisions
-        tiledMap.collisions.forEach((tile) => {
-            if (tile.tileId > 0) {
-                this.walls.insert({
-                    minX: tile.minX,
-                    minY: tile.minY,
-                    maxX: tile.maxX,
-                    maxY: tile.maxY,
-                    collider: tile.type || '',
-                });
-            }
-        });
-
-        // Textures
-        const texturePath = SpriteSheets[tiledMap.imageName];
-        const textures = getTexturesSet(texturePath, tiledMap.tilesets);
-
-        // Layers
-        const container = getSpritesLayer(textures, tiledMap.layers);
-        container.zIndex = ZINDEXES.GROUND;
-        this.viewport.addChild(container);
-    };
-
+    //
+    // Actions
+    //
     private move = (dir: Geometry.Vector2) => {
         if (!this.me) {
             return;
@@ -351,7 +316,7 @@ export class Game {
         const action: Models.ActionJSON = {
             type: 'move',
             ts: Date.now(),
-            playerId: this.me.playerId,
+            playerId: this.me.id,
             value: {
                 x: dir.x,
                 y: dir.y,
@@ -367,15 +332,10 @@ export class Game {
         // Actually move the player
         this.me.move(dir.x, dir.y, Constants.PLAYER_SPEED);
 
-        // Collisions: Map
-        const clampedPosition = this.map.clampCircle(this.me.body);
-        this.me.x = clampedPosition.x;
-        this.me.y = clampedPosition.y;
-
         // Collisions: Walls
-        const correctedPosition = this.walls.correctWithCircle(this.me.body);
-        this.me.x = correctedPosition.x;
-        this.me.y = correctedPosition.y;
+        // const correctedPosition = this.walls.correctWithCircle(this.me.body);
+        // this.me.x = correctedPosition.x;
+        // this.me.y = correctedPosition.y;
     };
 
     private rotate = () => {
@@ -383,41 +343,28 @@ export class Game {
             return;
         }
 
-        if (!utils.isMobile.any) {
-            // On desktop we compute rotation with player and mouse position
-            const screenPlayerPosition = this.viewport.toScreen(this.me.x, this.me.y);
-            const mouse = this.app.renderer.plugins.interaction.mouse.global;
-            const rotation = Maths.round2Digits(
-                Maths.calculateAngle(mouse.x, mouse.y, screenPlayerPosition.x, screenPlayerPosition.y),
-            );
+        // On desktop we compute rotation with player and mouse position
+        const screenPlayerPosition = this.viewport.toScreen(this.me.x, this.me.y);
+        const mouse = this.app.renderer.plugins.interaction.mouse.global;
+        const rotation = Maths.round2Digits(
+            Maths.calculateAngle(mouse.x, mouse.y, screenPlayerPosition.x, screenPlayerPosition.y),
+        );
 
-            if (this.me.rotation !== rotation) {
-                this.me.rotation = rotation;
-                this.onActionSend({
-                    type: 'rotate',
-                    ts: Date.now(),
-                    playerId: this.me.playerId,
-                    value: {
-                        rotation,
-                    },
-                });
-            }
-        } else if (this.me.rotation !== this.forcedRotation) {
-            // On mobile we take rotation directly from the joystick
-            this.me.rotation = this.forcedRotation;
+        if (this.me.rotation !== rotation) {
+            this.me.rotation = rotation;
             this.onActionSend({
                 type: 'rotate',
                 ts: Date.now(),
-                playerId: this.me.playerId,
+                playerId: this.me.id,
                 value: {
-                    rotation: this.forcedRotation,
+                    rotation,
                 },
             });
         }
     };
 
     private shoot = () => {
-        if (!this.me || this.state !== 'game' || !this.me.canShoot()) {
+        if (!this.me || this.game.state !== 'game' || !this.me.canShoot()) {
             return;
         }
 
@@ -426,117 +373,90 @@ export class Game {
 
         this.me.lastShootAt = Date.now();
 
-        this.bulletsManager.addOrCreate(
-            {
-                x: bulletX,
-                y: bulletY,
-                radius: Constants.BULLET_SIZE,
-                rotation: this.me.rotation,
-                active: true,
-                fromX: bulletX,
-                fromY: bulletY,
-                playerId: this.me.playerId,
-                team: this.me.team,
-                color: this.me.color,
-                shotAt: this.me.lastShootAt,
-            },
-            this.particlesContainer,
-        );
+        // this.bulletsManager.addOrCreate(
+        //     {
+        //         id:
+        //         x: bulletX,
+        //         y: bulletY,
+        //         radius: Constants.BULLET_SIZE,
+        //         rotation: this.me.rotation,
+        //         active: true,
+        //         fromX: bulletX,
+        //         fromY: bulletY,
+        //         playerId: this.me.playerId,
+        //         shotAt: this.me.lastShootAt,
+        //     },
+        //     this.particlesContainer,
+        // );
         this.onActionSend({
             type: 'shoot',
             ts: Date.now(),
-            playerId: this.me.playerId,
+            playerId: this.me.id,
             value: {
                 angle: this.me.rotation,
             },
         });
     };
 
-    // SPAWNERS
-    private spawnImpact = (x: number, y: number, color = '#ffffff') => {
-        new Emitter(this.playersManager, [ImpactTexture], {
-            ...ImpactConfig,
-            color: {
-                start: color,
-                end: color,
-            },
-            pos: {
-                x,
-                y,
-            },
-        }).playOnceAndDestroy();
-    };
-
-    // SETTERS
-    setScreenSize = (screenWidth: number, screenHeight: number) => {
-        this.app.renderer.resize(screenWidth, screenHeight);
-        this.viewport.resize(screenWidth, screenHeight, this.map.width, this.map.height);
-    };
-
-    // GETTERS
-    getStats = (): Stats => {
-        const players: Models.PlayerJSON[] = this.playersManager.getAll().map((player) => ({
-            playerId: player.playerId,
-            x: player.x,
-            y: player.y,
-            radius: player.body.radius,
-            rotation: player.rotation,
-            name: player.name,
-            color: player.color,
-            lives: player.lives,
-            maxLives: player.maxLives,
-            kills: player.kills,
-            team: player.team,
-        }));
-
-        return {
-            gameMode: this.mode || '',
-            gameModeEndsAt: this.lobbyEndsAt || this.gameEndsAt,
-            gameMap: this.mapName || '',
-            roomName: this.roomName || '',
-            playerName: this.me ? this.me.name : '',
-            playerLives: this.me ? this.me.lives : 0,
-            playerMaxLives: this.me ? this.me.maxLives : 0,
-            players,
-            playersCount: players.length,
-            playersMaxCount: this.maxPlayers,
-        };
-    };
-
     //
-    // All methods below are called by Colyseus change listeners.
+    // Game
     //
+    resetGame = () => {
+        if (!this.game.seed) {
+            return;
+        }
 
-    // COLYSEUS: Game
+        // Reset current states
+        this.map.clearDungeon();
+        this.tilesContainer.removeChildren();
+
+        // 1. Create dungeon
+        const dungeon = generate({
+            ...Maps.DEFAULT_DUNGEON,
+            seed: this.game.seed,
+        });
+        this.map.loadDungeon(dungeon);
+
+        for (let y = 0; y < dungeon.layers.tiles.length; y++) {
+            for (let x = 0; x < dungeon.layers.tiles[y].length; x++) {
+                const id = dungeon.layers.tiles[y][x];
+
+                const rectangle = new Graphics();
+                rectangle.beginFill(id > 0 ? 0xff0000 : 0x00ff00);
+                rectangle.drawRect(0, 0, Constants.TILE_SIZE, Constants.TILE_SIZE);
+                rectangle.endFill();
+                rectangle.position.set(x * Constants.TILE_SIZE, y * Constants.TILE_SIZE);
+                this.tilesContainer.addChild(rectangle);
+            }
+        }
+    };
+
     gameUpdate = (name: string, value: any) => {
         switch (name) {
-            case 'roomName':
-                this.roomName = value;
-                break;
-            case 'mapName':
-                this.initializeMap(value);
-                break;
             case 'state':
-                this.state = value;
+                this.game.state = value;
+                break;
+            case 'stateEndsAt':
+                this.game.stateEndsAt = value;
+                break;
+            case 'roomName':
+                this.game.roomName = value;
                 break;
             case 'maxPlayers':
-                this.maxPlayers = value;
+                this.game.maxPlayers = value;
                 break;
-            case 'lobbyEndsAt':
-                this.lobbyEndsAt = value;
-                break;
-            case 'gameEndsAt':
-                this.gameEndsAt = value;
-                break;
-            case 'mode':
-                this.mode = value;
+            case 'seed':
+                this.game.seed = value;
+                this.resetGame();
                 break;
             default:
                 break;
         }
     };
 
-    // COLYSEUS: Players
+    //
+    // Players
+    //
     playerAdd = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
         const player = new Player(attributes, isMe, this.particlesContainer);
         this.playersManager.add(playerId, player);
@@ -560,9 +480,7 @@ export class Game {
             // Update base
             this.me.lives = attributes.lives;
             this.me.maxLives = attributes.maxLives;
-            this.me.color = attributes.color;
             this.me.kills = attributes.kills;
-            this.me.team = attributes.team;
 
             if (attributes.ack !== this.me.ack) {
                 this.me.ack = attributes.ack;
@@ -584,7 +502,8 @@ export class Game {
                         action.value.x,
                         action.value.y,
                         Constants.PLAYER_SPEED,
-                        this.walls,
+                        // this.map,
+                        null as any, // TODO: Pass a real map
                     );
 
                     ghost.x = updatedPosition.x;
@@ -596,8 +515,7 @@ export class Game {
                 // Check if our predictions were accurate
                 const distance = Maths.getDistance(this.me.x, this.me.y, ghost.x, ghost.y);
                 if (distance > 0) {
-                    this.me.x = ghost.x;
-                    this.me.y = ghost.y;
+                    this.me.setPosition(ghost.x, ghost.y);
                 }
             }
         } else {
@@ -609,16 +527,13 @@ export class Game {
             // Update base
             player.lives = attributes.lives;
             player.maxLives = attributes.maxLives;
-            player.color = attributes.color;
             player.kills = attributes.kills;
-            player.team = attributes.team;
 
             // Update rotation
             player.rotation = attributes.rotation;
 
             // Update position
-            player.x = player.toX;
-            player.y = player.toY;
+            player.setPosition(player.toX, player.toY);
             player.toX = attributes.x;
             player.toY = attributes.y;
         }
@@ -634,7 +549,9 @@ export class Game {
         }
     };
 
-    // COLYSEUS: Monster
+    //
+    // Monsters
+    //
     monsterAdd = (monsterId: string, attributes: Models.MonsterJSON) => {
         const monster = new Monster(attributes);
         this.monstersManager.add(monsterId, monster);
@@ -659,7 +576,9 @@ export class Game {
         this.monstersManager.remove(monsterId);
     };
 
-    // COLYSEUS: Props
+    //
+    // Props
+    //
     propAdd = (propId: string, attributes: Models.PropJSON) => {
         const prop = new Prop(attributes);
         this.propsManager.add(propId, prop);
@@ -680,9 +599,11 @@ export class Game {
         this.propsManager.remove(propId);
     };
 
-    // COLYSEUS: Bullets
+    //
+    // Bullets
+    //
     bulletAdd = (bulletId: string, attributes: Models.BulletJSON) => {
-        if ((this.me && this.me.playerId === attributes.playerId) || !attributes.active) {
+        if ((this.me && this.me.id === attributes.playerId) || !attributes.active) {
             return;
         }
 
@@ -691,5 +612,57 @@ export class Game {
 
     bulletRemove = (bulletId: string) => {
         this.bulletsManager.remove(bulletId);
+    };
+
+    //
+    // Utils
+    //
+    private spawnImpact = (x: number, y: number, color = '#ffffff') => {
+        new Emitter(this.playersManager, [ImpactTexture], {
+            ...ImpactConfig,
+            color: {
+                start: color,
+                end: color,
+            },
+            pos: {
+                x,
+                y,
+            },
+        }).playOnceAndDestroy();
+    };
+
+    setScreenSize = (screenWidth: number, screenHeight: number) => {
+        this.app.renderer.resize(screenWidth, screenHeight);
+        this.viewport.resize(
+            screenWidth,
+            screenHeight,
+            this.map.width * Constants.TILE_SIZE,
+            this.map.height * Constants.TILE_SIZE,
+        );
+    };
+
+    getStats = (): Stats => {
+        const players: Models.PlayerJSON[] = this.playersManager.getAll().map((player) => ({
+            id: player.id,
+            x: player.x,
+            y: player.y,
+            radius: player.body.radius,
+            rotation: player.rotation,
+            name: player.name,
+            lives: player.lives,
+            maxLives: player.maxLives,
+            kills: player.kills,
+        }));
+
+        return {
+            stateEndsAt: this.game.stateEndsAt,
+            roomName: this.game.roomName,
+            playerName: this.me ? this.me.name : '',
+            playerLives: this.me ? this.me.lives : 0,
+            playerMaxLives: this.me ? this.me.maxLives : 0,
+            players,
+            playersCount: players.length,
+            playersMaxCount: this.game.maxPlayers,
+        };
     };
 }

@@ -1,4 +1,4 @@
-import { BaseEntity } from './';
+import { Circle } from './';
 import { Effects } from '../sprites';
 import { Graphics } from 'pixi.js';
 import { Models } from '@tosios/common';
@@ -12,7 +12,17 @@ const ZINDEXES = {
 
 export type MonsterDirection = 'left' | 'right';
 
-export class Monster extends BaseEntity {
+export class Monster extends Circle {
+    //
+    // Public fields
+    //
+    private _type: Models.MonsterType = 'bat';
+
+    private _state: Models.MonsterState = 'idle';
+
+    //
+    // Private fields
+    //
     private _toX: number = 0;
 
     private _toY: number = 0;
@@ -21,12 +31,16 @@ export class Monster extends BaseEntity {
 
     private _shadow: Graphics;
 
-    // Init
+    //
+    // Lifecycle
+    //
     constructor(monster: Models.MonsterJSON) {
         super({
+            id: monster.id,
             x: monster.x,
             y: monster.y,
             radius: monster.radius,
+            rotation: monster.rotation,
             textures: MonstersTextures.Bat,
             zIndex: ZINDEXES.MONSTER,
         });
@@ -44,22 +58,16 @@ export class Monster extends BaseEntity {
         this.container.sortChildren();
     }
 
+    //
     // Methods
+    //
     hurt() {
         Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
     }
 
+    //
     // Setters
-    set x(x: number) {
-        this.container.x = x;
-        this.body.x = x;
-    }
-
-    set y(y: number) {
-        this.container.y = y;
-        this.body.y = y;
-    }
-
+    //
     set toX(toX: number) {
         this._toX = toX;
     }
@@ -82,15 +90,9 @@ export class Monster extends BaseEntity {
         }
     }
 
+    //
     // Getters
-    get x(): number {
-        return this.body.x;
-    }
-
-    get y(): number {
-        return this.body.y;
-    }
-
+    //
     get toX() {
         return this._toX;
     }

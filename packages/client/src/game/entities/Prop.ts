@@ -1,5 +1,5 @@
 import { Graphics, Texture } from 'pixi.js';
-import { BaseEntity } from '.';
+import { Circle } from '.';
 import { Models } from '@tosios/common';
 import { PropTextures } from '../assets/images';
 
@@ -8,19 +8,29 @@ const ZINDEXES = {
     PROP: 1,
 };
 
-export class Prop extends BaseEntity {
+export class Prop extends Circle {
+    //
+    // Public fields
+    //
     private _type: Models.PropType;
 
+    //
+    // Private fields
+    //
     private _active: boolean = false;
 
     private _shadow: Graphics;
 
-    // Init
+    //
+    // Lifecycle
+    //
     constructor(prop: Models.PropJSON) {
         super({
+            id: prop.id,
             x: prop.x,
             y: prop.y,
             radius: prop.radius,
+            rotation: prop.rotation,
             textures: getTexture(prop.type),
             zIndex: ZINDEXES.PROP,
         });
@@ -42,31 +52,17 @@ export class Prop extends BaseEntity {
         this.active = prop.active;
     }
 
+    //
     // Setters
-    set x(x: number) {
-        this.container.x = x;
-        this.body.x = x;
-    }
-
-    set y(y: number) {
-        this.container.y = y;
-        this.body.y = y;
-    }
-
+    //
     set active(active: boolean) {
         this._active = active;
         this.visible = active;
     }
 
+    //
     // Getters
-    get x(): number {
-        return this.body.x;
-    }
-
-    get y(): number {
-        return this.body.y;
-    }
-
+    //
     get type() {
         return this._type;
     }
@@ -77,12 +73,10 @@ export class Prop extends BaseEntity {
 }
 
 /**
- * Return a texture depending on a type.
+ * Return a texture given a type.
  */
 const getTexture = (type: Models.PropType): Texture[] => {
     switch (type) {
-        case 'potion-red':
-            return PropTextures.potionRedTextures;
         default:
             return PropTextures.potionRedTextures;
     }

@@ -50,8 +50,6 @@ function Message(props: { message: Models.MessageJSON }): React.ReactElement {
 
 function getFormattedMessage(message: Models.MessageJSON): string {
     switch (message.type) {
-        case 'waiting':
-            return 'Waiting for other players...';
         case 'start':
             return 'Game starts!';
         case 'stop':

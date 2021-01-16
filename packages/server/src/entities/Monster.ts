@@ -168,13 +168,13 @@ export class Monster extends Circle {
     // Methods
     //
     lookForPlayer(players: MapSchema<Player>): boolean {
-        if (!this.targetPlayerId) {
-            const playerId = getClosestPlayerId(this.x, this.y, players);
-            if (playerId) {
-                this.startChase(playerId);
-                return true;
-            }
-        }
+        // if (!this.targetPlayerId) {
+        //     const playerId = getClosestPlayerId(this.x, this.y, players);
+        //     if (playerId) {
+        //         this.startChase(playerId);
+        //         return true;
+        //     }
+        // }
 
         return false;
     }

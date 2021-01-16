@@ -22,13 +22,14 @@ const ROOM_HOVERED = {
 export function Room(props: {
     id: string;
     roomName: string;
-    roomMap: string;
+    // roomMap: string;
     clients: number;
     maxClients: number;
-    mode: string;
+    // mode: string;
     onClick: (id: string) => void;
 }): React.ReactElement {
-    const { id, roomName, roomMap, clients, maxClients, mode, onClick } = props;
+    // const { id, roomName, roomMap, clients, maxClients, mode, onClick } = props;
+    const { id, roomName, clients, maxClients, onClick } = props;
     const [hovered, setHovered] = React.useState(false);
 
     return (
@@ -46,10 +47,10 @@ export function Room(props: {
                 <RoomFieldItem title="Name" content={`"${roomName || `Unknown's room`}"`} />
                 <Space size="xxs" />
                 <RoomFieldItem title="Players" content={`"${clients}/${maxClients}"`} />
-                <Space size="xxs" />
+                {/* <Space size="xxs" />
                 <RoomFieldItem title="Map" content={`"${roomMap}"`} />
                 <Space size="xxs" />
-                <RoomFieldItem title="Mode" content={`"${mode}"`} />
+                <RoomFieldItem title="Mode" content={`"${mode}"`} /> */}
             </View>
             {isMobile && <Space size="xs" />}
 

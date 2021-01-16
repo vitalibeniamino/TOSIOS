@@ -47,8 +47,10 @@ export class GameState extends Schema {
 
         // Game
         this.game = new Game({
+            state: 'lobby',
             roomName: args.roomName,
             maxPlayers: args.maxPlayers,
+            stateEndsAt: Date.now() + 1000 * 5,
             onLobbyStart: this.handleLobbyStart,
             onGameStart: this.handleGameStart,
             onGameEnd: this.handleGameEnd,
@@ -129,6 +131,7 @@ export class GameState extends Schema {
             ...Maps.DEFAULT_DUNGEON,
             seed,
         });
+
         this.game.seed = seed;
         this.map.loadDungeon(dungeon);
 
@@ -142,8 +145,8 @@ export class GameState extends Schema {
                 radius: item.w / 2,
                 rotation: 0,
                 type: 'bat', // TODO: Change this once all types are implemented
-                mapWidth: this.map.width,
-                mapHeight: this.map.height,
+                mapWidth: this.map.width * Constants.TILE_SIZE,
+                mapHeight: this.map.height * Constants.TILE_SIZE,
                 lives: Constants.MONSTER_LIVES,
             });
 
@@ -210,11 +213,11 @@ export class GameState extends Schema {
     // Players: single
     //
     playerAdd(id: string, name: string) {
-        const ladder = this.getLadderCoord();
+        // const ladder = this.getLadderCoord();
         const player = new Player({
             id,
-            x: ladder.x + Constants.PLAYER_SIZE / 2,
-            y: ladder.y + Constants.PLAYER_SIZE / 2,
+            x: 0,
+            y: 0,
             radius: Constants.PLAYER_SIZE / 2,
             rotation: 0,
             lives: 0,
@@ -358,7 +361,7 @@ export class GameState extends Schema {
     //
     // Monsters
     //
-    private monsterUpdate(id: string) {
+    private monsterUpdate = (id: string) => {
         const monster = this.monsters.get(id);
         if (!monster || !monster.isAlive) {
             return;
@@ -390,39 +393,39 @@ export class GameState extends Schema {
                 });
             }
         });
-    }
+    };
 
-    private monsterRemove(id: string) {
+    private monsterRemove = (id: string) => {
         this.map.removeItem(id);
         this.monsters.delete(id);
-    }
+    };
 
-    private monstersClear() {
+    private monstersClear = () => {
         const ids = Array.from(this.monsters.keys());
         ids.forEach(this.monsterRemove);
-    }
+    };
 
     //
     // Props
     //
-    private propUpdate(id: string) {
+    private propUpdate = (id: string) => {
         const prop = this.props.get(id);
-    }
+    };
 
-    private propRemove(id: string) {
+    private propRemove = (id: string) => {
         this.map.removeItem(id);
         this.props.delete(id);
-    }
+    };
 
-    private propsClear() {
+    private propsClear = () => {
         const ids = Array.from(this.props.keys());
         ids.forEach(this.propRemove);
-    }
+    };
 
     //
     // Bullets
     //
-    private bulletUpdate(bulletId: string) {
+    private bulletUpdate = (bulletId: string) => {
         const bullet = this.bullets[bulletId];
         if (!bullet || !bullet.active) {
             return;
@@ -496,17 +499,17 @@ export class GameState extends Schema {
         if (collidingWalls.length > 0) {
             bullet.active = false;
         }
-    }
+    };
 
-    private bulletRemove(id: string) {
+    private bulletRemove = (id: string) => {
         this.map.removeItem(id);
         this.bullets.delete(id);
-    }
+    };
 
-    private bulletsClear() {
+    private bulletsClear = () => {
         const ids = Array.from(this.bullets.keys());
         ids.forEach(this.bulletRemove);
-    }
+    };
 
     //
     // Utils

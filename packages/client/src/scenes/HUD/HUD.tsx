@@ -8,9 +8,9 @@ import { isMobile } from 'react-device-detect';
 const HUD_PADDING = isMobile ? 16 : 24;
 
 export interface HUDProps {
-    gameMode: string;
-    gameMap: string;
-    gameModeEndsAt: number;
+    // gameMode: string;
+    // gameMap: string;
+    stateEndsAt: number;
     roomName: string;
     playerId: string;
     playerName: string;
@@ -36,9 +36,9 @@ export const HUD = React.memo(
     (props: HUDProps): React.ReactElement => {
         const {
             playerId,
-            gameMode,
-            gameMap,
-            gameModeEndsAt,
+            // gameMode,
+            // gameMap,
+            stateEndsAt,
             roomName,
             playerName,
             playerLives,
@@ -99,7 +99,8 @@ export const HUD = React.memo(
                 <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
 
                 {/* Time */}
-                <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} />
+                {/* <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} /> */}
+                <Time endsAt={stateEndsAt} style={styles.time} />
 
                 {/* Players */}
                 <Players
@@ -119,8 +120,8 @@ export const HUD = React.memo(
                 {leaderboardOpened ? (
                     <Leaderboard
                         roomName={roomName}
-                        mapName={gameMap}
-                        mode={gameMode}
+                        // mapName={gameMap}
+                        // mode={gameMode}
                         players={players}
                         playerId={playerId}
                     />

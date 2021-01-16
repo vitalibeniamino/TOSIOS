@@ -28,9 +28,9 @@ export function movePlayer(
     y += speedY;
 
     // Collide
-    const corrected = walls.correctWithCircle(new CircleBody(x, y, radius));
-    x = corrected.x;
-    y = corrected.y;
+    // const corrected = walls.correctWithCircle(new CircleBody(x, y, radius));
+    // x = corrected.x;
+    // y = corrected.y;
 
     return { x, y };
 }

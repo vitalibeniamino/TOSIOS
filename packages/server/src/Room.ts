@@ -22,7 +22,6 @@ export class GameRoom extends Room<GameState> {
             playerName,
             roomName,
             roomMaxPlayers: this.maxClients,
-            mode: options.mode,
         });
 
         // Init State
@@ -37,9 +36,7 @@ export class GameRoom extends Room<GameState> {
         this.setSimulationInterval(() => this.handleTick());
 
         console.log(
-            `${new Date().toISOString()} [Created] player=${playerName} room=${roomName} map=${options.roomMap} max=${
-                this.maxClients
-            } mode=${options.mode}`,
+            `${new Date().toISOString()} [Created] player=${playerName} room=${roomName}max=${this.maxClients}`,
         );
 
         // Listen to messages from clients

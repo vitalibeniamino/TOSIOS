@@ -1,7 +1,7 @@
-import { BaseEntity } from '../entities/BaseEntity';
+import { Circle } from '../entities/Circle';
 import { Container } from 'pixi.js';
 
-export class BaseManager<T extends BaseEntity> extends Container {
+export class BaseManager<T extends Circle> extends Container {
     protected container: Container;
 
     protected entities: { [key: string]: T };

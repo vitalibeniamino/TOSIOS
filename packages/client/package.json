@@ -3,10 +3,12 @@
     "version": "0.15.0",
     "private": true,
     "dependencies": {
+        "@halftheopposite/dungeon": "^0.2.2",
         "@reach/router": "^1.2.1",
         "@tosios/common": "0.15.0",
         "colyseus.js": "^0.14.0",
         "howler": "^2.2.1",
+        "nanoid": "^3.1.20",
         "pixi-particles": "^4.2.0",
         "pixi-viewport": "^4.5.0",
         "pixi.js": "^5.2.0",

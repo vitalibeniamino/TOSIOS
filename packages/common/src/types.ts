@@ -16,7 +16,5 @@ export interface IPlayerOptions {
 export interface IRoomOptions {
     playerName?: string;
     roomName: string;
-    roomMap: string;
     roomMaxPlayers: number;
-    mode: GameMode;
 }

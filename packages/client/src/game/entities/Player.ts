@@ -1,9 +1,9 @@
-import { Constants, Maths, Models, Types } from '@tosios/common';
+import { Constants, Maths, Models } from '@tosios/common';
 import { Container, Graphics, Sprite, Texture, utils } from 'pixi.js';
 import { Effects, PlayerLivesSprite, TextSprite } from '../sprites';
 import { PlayerTextures, WeaponTextures } from '../assets/images';
 import { SmokeConfig, SmokeTexture } from '../assets/particles';
-import { BaseEntity } from '.';
+import { Circle } from '.';
 import { Emitter } from 'pixi-particles';
 
 const NAME_OFFSET = 4;
@@ -23,24 +23,23 @@ const ZINDEXES = {
 
 export type PlayerDirection = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-export class Player extends BaseEntity {
-    private _playerId: string = '';
-
+export class Player extends Circle {
+    //
+    // Public fields
+    //
     private _name: string = '';
 
     private _lives: number = 0;
 
     private _maxLives: number = 0;
 
-    public team?: Types.Teams;
-
-    private _color: string = '#FFFFFF';
-
     private _kills: number = 0;
 
     private _rotation: number = 0;
 
-    // Computed
+    //
+    // Private fields
+    //
     private _isGhost: boolean = false;
 
     private _direction: PlayerDirection = 'bottom-right';
@@ -65,12 +64,16 @@ export class Player extends BaseEntity {
 
     private _lastSmokeAt: number = 0;
 
-    // Init
+    //
+    // Lifecycle
+    //
     constructor(player: Models.PlayerJSON, isGhost: boolean, particlesContainer?: Container) {
         super({
+            id: player.id,
             x: player.x,
             y: player.y,
             radius: player.radius,
+            rotation: player.rotation,
             textures: getTexture(player.lives),
             zIndex: ZINDEXES.PLAYER,
         });
@@ -114,16 +117,13 @@ export class Player extends BaseEntity {
         this._particlesContainer = particlesContainer;
 
         // Player
-        this.playerId = player.playerId;
         this.toX = player.x;
         this.toY = player.y;
         this.rotation = player.rotation;
         this.name = player.name;
-        this.color = player.color;
         this.lives = player.lives;
         this.maxLives = player.maxLives;
         this.kills = player.kills;
-        this.team = player.team;
         this.isGhost = isGhost;
 
         // Ghost
@@ -143,11 +143,11 @@ export class Player extends BaseEntity {
     }
 
     hurt() {
-        Effects.flash(this.sprite, HURT_COLOR, utils.string2hex(this.color));
+        Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
     }
 
     heal() {
-        Effects.flash(this.sprite, HEAL_COLOR, utils.string2hex(this.color));
+        Effects.flash(this.sprite, HEAL_COLOR, 0xffffff);
     }
 
     updateTextures() {
@@ -188,7 +188,7 @@ export class Player extends BaseEntity {
         return true;
     }
 
-    canBulletHurt(otherPlayerId: string, team?: string): boolean {
+    canBulletHurt(otherPlayerId: string): boolean {
         if (!this.isAlive) {
             return false;
         }
@@ -197,11 +197,7 @@ export class Player extends BaseEntity {
             return false;
         }
 
-        if (this.playerId === otherPlayerId) {
-            return false;
-        }
-
-        if (!!team && team === this.team) {
+        if (this.id === otherPlayerId) {
             return false;
         }
 
@@ -233,29 +229,19 @@ export class Player extends BaseEntity {
         this._lastSmokeAt = Date.now();
     }
 
+    setPosition(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+        this.spawnSmoke();
+    }
+
     // Setters
-    set x(x: number) {
-        this.container.x = x;
-        this.body.x = x;
-        this.spawnSmoke();
-    }
-
-    set y(y: number) {
-        this.container.y = y;
-        this.body.y = y;
-        this.spawnSmoke();
-    }
-
     set toX(toX: number) {
         this._toX = toX;
     }
 
     set toY(toY: number) {
         this._toY = toY;
-    }
-
-    set playerId(playerId: string) {
-        this._playerId = playerId;
     }
 
     set name(name: string) {
@@ -285,21 +271,6 @@ export class Player extends BaseEntity {
         this._maxLives = maxLives;
         this._livesSprite.maxLives = this._maxLives;
         this.updateTextures();
-    }
-
-    set color(color: string) {
-        if (this._color === color) {
-            return;
-        }
-
-        this._color = color;
-
-        // FIXME: Tints seem not to be apliable directly on a AnimatedSprite.
-        // Therefore, adding a delay fixes the problem for now.
-        setTimeout(() => {
-            this.sprite.tint = utils.string2hex(color);
-            this._weaponSprite.tint = utils.string2hex(color);
-        }, 300);
     }
 
     set kills(kills: number) {
@@ -348,24 +319,12 @@ export class Player extends BaseEntity {
     }
 
     // Getters
-    get x(): number {
-        return this.body.x;
-    }
-
-    get y(): number {
-        return this.body.y;
-    }
-
     get toX(): number {
         return this._toX;
     }
 
     get toY(): number {
         return this._toY;
-    }
-
-    get playerId() {
-        return this._playerId;
     }
 
     get name() {
@@ -378,10 +337,6 @@ export class Player extends BaseEntity {
 
     get maxLives() {
         return this._maxLives;
-    }
-
-    get color() {
-        return this._color;
     }
 
     get kills() {

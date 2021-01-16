@@ -28,41 +28,37 @@ export default class BulletsManager extends BaseManager<Bullet> {
         const inactiveBullet = this.getFirstInactiveBullet();
         if (inactiveBullet) {
             // Recycle bullet
-            inactiveBullet.reset({
-                x: bullet.fromX,
-                y: bullet.fromY,
-                radius: bullet.radius,
-                rotation: bullet.rotation,
-                active: bullet.active,
-                fromX: bullet.fromX,
-                fromY: bullet.fromY,
-                shotAt: bullet.shotAt,
-                playerId: bullet.playerId,
-                team: bullet.team,
-                color: bullet.color,
-            });
+            // inactiveBullet.reset({
+            //     x: bullet.fromX,
+            //     y: bullet.fromY,
+            //     radius: bullet.radius,
+            //     rotation: bullet.rotation,
+            //     active: bullet.active,
+            //     fromX: bullet.fromX,
+            //     fromY: bullet.fromY,
+            //     shotAt: bullet.shotAt,
+            //     playerId: bullet.playerId,
+            // });
         } else {
             // Add new bullet
             const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-            this.add(
-                randomId,
-                new Bullet(
-                    {
-                        x: bullet.fromX,
-                        y: bullet.fromY,
-                        radius: bullet.radius,
-                        rotation: bullet.rotation,
-                        active: bullet.active,
-                        fromX: bullet.fromX,
-                        fromY: bullet.fromY,
-                        shotAt: bullet.shotAt,
-                        playerId: bullet.playerId,
-                        team: bullet.team,
-                        color: bullet.color,
-                    },
-                    particlesContainer,
-                ),
-            );
+            // this.add(
+            //     randomId,
+            //     new Bullet(
+            //         {
+            //             x: bullet.fromX,
+            //             y: bullet.fromY,
+            //             radius: bullet.radius,
+            //             rotation: bullet.rotation,
+            //             active: bullet.active,
+            //             fromX: bullet.fromX,
+            //             fromY: bullet.fromY,
+            //             shotAt: bullet.shotAt,
+            //             playerId: bullet.playerId,
+            //         },
+            //         particlesContainer,
+            //     ),
+            // );
         }
     }
 }

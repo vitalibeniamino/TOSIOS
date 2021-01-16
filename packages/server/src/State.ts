@@ -13,7 +13,7 @@ export interface GameStateArgs {
 
 export class GameState extends Schema {
     //
-    // Public fields
+    // Sync fields
     //
     @type(Game)
     public game: Game;
@@ -31,7 +31,7 @@ export class GameState extends Schema {
     public bullets: MapSchema<Bullet> = new MapSchema<Bullet>();
 
     //
-    // Private fields
+    // Local fields
     //
     private map: DungeonMap = new DungeonMap(Constants.TILE_SIZE);
 

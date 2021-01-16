@@ -10,7 +10,7 @@ export interface IGame {
 
 export class Game {
     //
-    // Public fields
+    // Sync fields
     //
     public state: Types.GameState;
 

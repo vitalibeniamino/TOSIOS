@@ -27,7 +27,9 @@ export default class Match extends Component<IProps, IState> {
 
     private timer: NodeJS.Timeout | null = null;
 
-    // BASE
+    //
+    // Lifecycle
+    //
     constructor(props: IProps) {
         super(props);
 
@@ -40,8 +42,7 @@ export default class Match extends Component<IProps, IState> {
 
         this.state = {
             hud: {
-                // gameMode: '',
-                // gameMap: '',
+                state: 'lobby',
                 stateEndsAt: 0,
                 roomName: '',
                 playerId: '',
@@ -65,7 +66,9 @@ export default class Match extends Component<IProps, IState> {
         this.stop();
     }
 
-    // LIFECYCLE
+    //
+    // Game
+    //
     start = async () => {
         const { roomId = '', location: { search = '' } = {} } = this.props;
 
@@ -156,7 +159,21 @@ export default class Match extends Component<IProps, IState> {
         }
     };
 
-    // HANDLERS: Colyseus
+    handleActionSend = (action: Models.ActionJSON) => {
+        if (!this.room) {
+            return;
+        }
+
+        this.room.send(action.type, action);
+    };
+
+    handleWindowResize = () => {
+        this.gameState.setScreenSize(window.innerWidth, window.innerHeight);
+    };
+
+    //
+    // Handlers: Colyseus
+    //
     handleGameChange = (attributes: any) => {
         for (const row of attributes) {
             this.gameState.gameUpdate(row.field, row.value);
@@ -254,21 +271,9 @@ export default class Match extends Component<IProps, IState> {
         this.updateRoom();
     };
 
-    // HANDLERS: GameManager
-    handleActionSend = (action: Models.ActionJSON) => {
-        if (!this.room) {
-            return;
-        }
-
-        this.room.send(action.type, action);
-    };
-
-    // HANDLERS: Inputs
-    handleWindowResize = () => {
-        this.gameState.setScreenSize(window.innerWidth, window.innerHeight);
-    };
-
-    // METHODS
+    //
+    // Utils
+    //
     isPlayerIdMe = (playerId: string) => {
         return this.state.hud.playerId === playerId;
     };
@@ -285,7 +290,9 @@ export default class Match extends Component<IProps, IState> {
         }));
     };
 
-    // RENDER
+    //
+    // Render
+    //
     render() {
         const { hud } = this.state;
 
@@ -298,7 +305,6 @@ export default class Match extends Component<IProps, IState> {
             >
                 {/* Set page's title */}
                 <Helmet>
-                    {/* <title>{`${hud.roomName || hud.gameMode} [${hud.playersCount}]`}</title> */}
                     <title>{`${hud.roomName} [${hud.playersCount}]`}</title>
                 </Helmet>
 
@@ -308,8 +314,7 @@ export default class Match extends Component<IProps, IState> {
                 {/* HUD: GUI, menu, leaderboard */}
                 <HUD
                     playerId={hud.playerId}
-                    // gameMode={hud.gameMode}
-                    // gameMap={hud.gameMap}
+                    state={hud.state}
                     stateEndsAt={hud.stateEndsAt}
                     roomName={hud.roomName}
                     playerName={hud.playerName}

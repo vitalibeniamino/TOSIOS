@@ -14,14 +14,14 @@ export type MonsterDirection = 'left' | 'right';
 
 export class Monster extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     private _type: Models.MonsterType = 'bat';
 
     private _state: Models.MonsterState = 'idle';
 
     //
-    // Private fields
+    // Local fields
     //
     private _toX: number = 0;
 

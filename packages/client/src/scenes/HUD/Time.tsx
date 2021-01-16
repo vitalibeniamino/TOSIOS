@@ -7,10 +7,8 @@ import { isMobile } from 'react-device-detect';
  * Render the time left in current game mode.
  */
 export const Time = React.memo(
-    // (props: { mode: string; endsAt: number; style?: CSSProperties }): React.ReactElement => {
-    (props: { endsAt: number; style?: CSSProperties }): React.ReactElement => {
-        // const { mode, endsAt, style } = props;
-        const { endsAt, style } = props;
+    (props: { state: string; endsAt: number; style?: CSSProperties }): React.ReactElement => {
+        const { state, endsAt, style } = props;
         const [timeText, setTimeText] = React.useState('00:00');
 
         React.useEffect(() => {
@@ -37,8 +35,8 @@ export const Time = React.memo(
                     ...style,
                 }}
             >
-                {/* <Text style={styles.modeText}>{mode}</Text> */}
-                {/* <Space size="xs" /> */}
+                <Text style={styles.stateText}>{state}</Text>
+                <Space size="xs" />
                 <Text style={styles.timeText}>{timeText}</Text>
             </Container>
         );
@@ -63,7 +61,7 @@ const styles: { [key: string]: CSSProperties } = {
         flexDirection: 'column',
         alignItems: 'center',
     },
-    modeText: {
+    stateText: {
         color: 'white',
         fontSize: isMobile ? 14 : 16,
         textTransform: 'capitalize',

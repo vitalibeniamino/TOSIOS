@@ -15,7 +15,7 @@ export interface IGame {
 
 export class Game extends Schema {
     //
-    // Public fields
+    // Sync fields
     //
     @type('string')
     public state: Types.GameState;
@@ -33,7 +33,7 @@ export class Game extends Schema {
     public seed: string;
 
     //
-    // Private fields
+    // Local fields
     //
     private onLobbyStart: (message?: Models.MessageJSON) => void;
 

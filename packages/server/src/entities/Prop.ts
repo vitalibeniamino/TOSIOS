@@ -9,7 +9,7 @@ export interface IMonster extends ICircle {
 
 export class Prop extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     @type('string')
     public type: Models.PropType;

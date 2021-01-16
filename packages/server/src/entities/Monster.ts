@@ -12,7 +12,7 @@ export interface IMonster extends ICircle {
 
 export class Monster extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     @type('string')
     private type: Models.MonsterType;
@@ -21,7 +21,7 @@ export class Monster extends Circle {
     private state: Models.MonsterState;
 
     //
-    // Private fields
+    // Local fields
     //
     private mapWidth: number;
 

@@ -1,31 +1,16 @@
-import {
-    Box,
-    RoomFieldItem,
-    Separator,
-    Space,
-    Table,
-    TableCell,
-    TableHeader,
-    TableRow,
-    Text,
-    View,
-} from '../../components';
-import { Models, Sorts, Types } from '@tosios/common';
-import React, { CSSProperties, Fragment } from 'react';
+import { Box, RoomFieldItem, Separator, Space, View } from '../../components';
+import React, { CSSProperties } from 'react';
+import { Models } from '@tosios/common';
 
 /**
  * A leaderboard of all players.
  */
 export function Leaderboard(props: {
     roomName: string;
-    // mapName: string;
-    // mode: string;
     players?: Models.PlayerJSON[];
     playerId: string;
 }): React.ReactElement {
-    // const { roomName, mapName, mode, players = [], playerId } = props;
-    const { roomName, players = [], playerId } = props;
-    // const isDeathmatch = mode === 'deathmatch';
+    const { roomName } = props;
 
     return (
         <View fullscreen backdrop flex center style={styles.leaderboard}>

@@ -6,7 +6,7 @@ export interface IEntity {
 
 export class Entity extends Schema {
     //
-    // Public fields
+    // Sync fields
     //
     @type('string')
     public id: string;

@@ -10,12 +10,12 @@ const ZINDEXES = {
 
 export class Prop extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     private _type: Models.PropType;
 
     //
-    // Private fields
+    // Local fields
     //
     private _active: boolean = false;
 

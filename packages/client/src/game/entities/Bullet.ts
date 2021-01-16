@@ -12,12 +12,12 @@ const ZINDEXES = {
 
 export class Bullet extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     private _playerId: string = '';
 
     //
-    // Private fields
+    // Local fields
     //
     private _active: boolean = false;
 

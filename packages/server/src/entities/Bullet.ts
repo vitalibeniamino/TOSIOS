@@ -9,7 +9,7 @@ export interface IBullet extends ICircle {
 
 export class Bullet extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     @type('string')
     public playerId: string;

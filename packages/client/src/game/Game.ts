@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, SCALE_MODES, settings, utils } from 'pixi.js';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
-import { Constants, Geometry, Maps, Maths, Models } from '@tosios/common';
+import { Constants, Geometry, Maps, Maths, Models, Types } from '@tosios/common';
 import { DungeonMap, generate } from '@halftheopposite/dungeon';
 import { Game, Monster, Player, Prop } from './entities';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
@@ -30,6 +30,7 @@ const TOREMOVE_MAX_FPS_MS = 1000 / 60;
 const TOREMOVE_AVG_LAG = 50;
 
 export interface Stats {
+    state: Types.GameState;
     stateEndsAt: number;
     roomName?: string;
     playerName: string;
@@ -51,12 +52,12 @@ export interface IGameState {
  */
 export class GameState {
     //
-    // Public fields
+    // Sync fields
     //
     private game: Game;
 
     //
-    // Private fields
+    // Local fields
     //
     private app: Application;
 
@@ -655,6 +656,7 @@ export class GameState {
         }));
 
         return {
+            state: this.game.state,
             stateEndsAt: this.game.stateEndsAt,
             roomName: this.game.roomName,
             playerName: this.me ? this.me.name : '',

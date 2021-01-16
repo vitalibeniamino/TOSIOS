@@ -25,7 +25,7 @@ export type PlayerDirection = 'top-left' | 'top-right' | 'bottom-left' | 'bottom
 
 export class Player extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     private _name: string = '';
 
@@ -38,7 +38,7 @@ export class Player extends Circle {
     private _rotation: number = 0;
 
     //
-    // Private fields
+    // Local fields
     //
     private _isGhost: boolean = false;
 

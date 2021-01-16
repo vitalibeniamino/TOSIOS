@@ -1,5 +1,5 @@
 import { Health, Leaderboard, Menu, Messages, Players, Time } from './';
-import { Keys, Models } from '@tosios/common';
+import { Keys, Models, Types } from '@tosios/common';
 import React, { CSSProperties } from 'react';
 import { Announce } from './Announce';
 import { View } from '../../components';
@@ -8,8 +8,7 @@ import { isMobile } from 'react-device-detect';
 const HUD_PADDING = isMobile ? 16 : 24;
 
 export interface HUDProps {
-    // gameMode: string;
-    // gameMap: string;
+    state: Types.GameState;
     stateEndsAt: number;
     roomName: string;
     playerId: string;
@@ -36,8 +35,7 @@ export const HUD = React.memo(
     (props: HUDProps): React.ReactElement => {
         const {
             playerId,
-            // gameMode,
-            // gameMap,
+            state,
             stateEndsAt,
             roomName,
             playerName,
@@ -99,8 +97,7 @@ export const HUD = React.memo(
                 <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
 
                 {/* Time */}
-                {/* <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} /> */}
-                <Time endsAt={stateEndsAt} style={styles.time} />
+                <Time state={state} endsAt={stateEndsAt} style={styles.time} />
 
                 {/* Players */}
                 <Players
@@ -117,15 +114,7 @@ export const HUD = React.memo(
                 <Announce announce={announce} style={styles.announce} />
 
                 {/* Leaderboard */}
-                {leaderboardOpened ? (
-                    <Leaderboard
-                        roomName={roomName}
-                        // mapName={gameMap}
-                        // mode={gameMode}
-                        players={players}
-                        playerId={playerId}
-                    />
-                ) : null}
+                {leaderboardOpened ? <Leaderboard roomName={roomName} players={players} playerId={playerId} /> : null}
 
                 {/* Menu */}
                 {menuOpened ? <Menu onClose={() => setMenuOpened(false)} onLeave={handleLeave} /> : null}

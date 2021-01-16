@@ -10,7 +10,7 @@ export interface IPlayer extends ICircle {
 
 export class Player extends Circle {
     //
-    // Public fields
+    // Sync fields
     //
     @type('string')
     public name: string;
@@ -28,7 +28,7 @@ export class Player extends Circle {
     public ack: number;
 
     //
-    // Private fields
+    // Local fields
     //
     public lastShootAt: number;
 

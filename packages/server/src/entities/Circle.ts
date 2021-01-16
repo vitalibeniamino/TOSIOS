@@ -11,7 +11,7 @@ export interface ICircle extends IEntity {
 
 export class Circle extends Entity {
     //
-    // Public fields
+    // Sync fields
     //
     @type('number')
     public x: number;

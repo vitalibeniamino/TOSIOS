@@ -1,6 +1,6 @@
 import { CircleJSON } from './Circle';
+import { PropType } from '@halftheopposite/dungeon';
 
-export type PropType = 'potion-red';
 export interface PropJSON extends CircleJSON {
     type: PropType;
     active: boolean;

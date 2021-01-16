@@ -1,7 +1,7 @@
-import { Graphics, Texture } from 'pixi.js';
-import { Circle } from '.';
+import { Circle } from './Circle';
 import { Models } from '@tosios/common';
 import { PropTextures } from '../assets/images';
+import { PropType } from '@halftheopposite/dungeon';
 
 const ZINDEXES = {
     SHADOW: 0,
@@ -12,14 +12,12 @@ export class Prop extends Circle {
     //
     // Sync fields
     //
-    private _type: Models.PropType;
+    private _type: PropType;
 
     //
     // Local fields
     //
     private _active: boolean = false;
-
-    private _shadow: Graphics;
 
     //
     // Lifecycle
@@ -31,18 +29,9 @@ export class Prop extends Circle {
             y: prop.y,
             radius: prop.radius,
             rotation: prop.rotation,
-            textures: getTexture(prop.type),
+            textures: [PropTextures.sprites[prop.type]],
             zIndex: ZINDEXES.PROP,
         });
-
-        // Shadow
-        this._shadow = new Graphics();
-        this._shadow.zIndex = ZINDEXES.SHADOW;
-        this._shadow.pivot.set(0.5);
-        this._shadow.beginFill(0x000000, 0.3);
-        this._shadow.drawEllipse(prop.radius, prop.radius * 2, prop.radius / 2, prop.radius / 4);
-        this._shadow.endFill();
-        this.container.addChild(this._shadow);
 
         // Sort rendering order
         this.container.sortChildren();
@@ -71,13 +60,3 @@ export class Prop extends Circle {
         return this._active;
     }
 }
-
-/**
- * Return a texture given a type.
- */
-const getTexture = (type: Models.PropType): Texture[] => {
-    switch (type) {
-        default:
-            return PropTextures.potionRedTextures;
-    }
-};

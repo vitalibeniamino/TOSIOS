@@ -162,7 +162,7 @@ export class GameState extends Schema {
                 y: item.y,
                 radius: item.w / 2,
                 rotation: 0,
-                type: 'potion-red', // TODO: Change this once all types are implemented
+                type: item.type as PropType,
             });
 
             this.props.set(item.id, prop);

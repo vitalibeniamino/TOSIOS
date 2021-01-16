@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, SCALE_MODES, settings, utils } from 'pixi.js';
+import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
 import { Constants, Geometry, Maps, Maths, Models, Types } from '@tosios/common';
 import { DungeonMap, generate } from '@halftheopposite/dungeon';
@@ -9,6 +9,7 @@ import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
 import { Viewport } from 'pixi-viewport';
 import { distanceBetween } from './utils/distance';
+import { drawTiles } from './utils/tiles';
 
 // We don't want to scale textures linearly because they would appear blurry.
 settings.SCALE_MODE = SCALE_MODES.NEAREST;
@@ -411,25 +412,15 @@ export class GameState {
         this.map.clearDungeon();
         this.tilesContainer.removeChildren();
 
-        // 1. Create dungeon
+        // 1. Create dungeon using seed from server
         const dungeon = generate({
             ...Maps.DEFAULT_DUNGEON,
             seed: this.game.seed,
         });
         this.map.loadDungeon(dungeon);
 
-        for (let y = 0; y < dungeon.layers.tiles.length; y++) {
-            for (let x = 0; x < dungeon.layers.tiles[y].length; x++) {
-                const id = dungeon.layers.tiles[y][x];
-
-                const rectangle = new Graphics();
-                rectangle.beginFill(id > 0 ? 0xff0000 : 0x00ff00);
-                rectangle.drawRect(0, 0, Constants.TILE_SIZE, Constants.TILE_SIZE);
-                rectangle.endFill();
-                rectangle.position.set(x * Constants.TILE_SIZE, y * Constants.TILE_SIZE);
-                this.tilesContainer.addChild(rectangle);
-            }
-        }
+        // 2. Draw dungeon
+        drawTiles(dungeon.layers.tiles, this.tilesContainer);
     };
 
     gameUpdate = (name: string, value: any) => {

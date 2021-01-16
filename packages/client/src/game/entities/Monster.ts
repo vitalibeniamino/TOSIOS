@@ -2,6 +2,7 @@ import { Circle } from './';
 import { Effects } from '../sprites';
 import { Graphics } from 'pixi.js';
 import { Models } from '@tosios/common';
+import { MonsterType } from '@halftheopposite/dungeon';
 import { MonstersTextures } from '../assets/images';
 
 const HURT_COLOR = 0xff0000;
@@ -16,7 +17,7 @@ export class Monster extends Circle {
     //
     // Sync fields
     //
-    private _type: Models.MonsterType = 'bat';
+    private _type: MonsterType;
 
     private _state: Models.MonsterState = 'idle';
 
@@ -41,7 +42,7 @@ export class Monster extends Circle {
             y: monster.y,
             radius: monster.radius,
             rotation: monster.rotation,
-            textures: MonstersTextures.Bat,
+            textures: [MonstersTextures.sprites[monster.type]],
             zIndex: ZINDEXES.MONSTER,
         });
 
@@ -56,6 +57,10 @@ export class Monster extends Circle {
 
         // Sort rendering order
         this.container.sortChildren();
+
+        // Prop
+        this._type = monster.type;
+        this._state = monster.state;
     }
 
     //

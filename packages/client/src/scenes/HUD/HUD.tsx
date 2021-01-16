@@ -1,5 +1,5 @@
 import { Health, Leaderboard, Menu, Messages, Players, Time } from './';
-import { Keys, Models, Types } from '@tosios/common';
+import { Keys, Models } from '@tosios/common';
 import React, { CSSProperties } from 'react';
 import { Announce } from './Announce';
 import { View } from '../../components';
@@ -8,7 +8,7 @@ import { isMobile } from 'react-device-detect';
 const HUD_PADDING = isMobile ? 16 : 24;
 
 export interface HUDProps {
-    state: Types.GameState;
+    state: Models.GameState;
     stateEndsAt: number;
     roomName: string;
     playerId: string;

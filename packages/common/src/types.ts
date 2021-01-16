@@ -1,6 +1,3 @@
-export type GameState = 'lobby' | 'game';
-export type GameMode = 'deathmatch' | 'team deathmatch';
-export type Teams = 'Red' | 'Blue';
 export type WallCollisionType = 'full' | 'none';
 
 /**

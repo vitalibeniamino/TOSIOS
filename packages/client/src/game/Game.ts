@@ -31,7 +31,7 @@ const TOREMOVE_MAX_FPS_MS = 1000 / 60;
 const TOREMOVE_AVG_LAG = 50;
 
 export interface Stats {
-    state: Types.GameState;
+    state: Models.GameState;
     stateEndsAt: number;
     roomName?: string;
     playerName: string;

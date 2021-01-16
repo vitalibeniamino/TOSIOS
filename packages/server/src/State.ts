@@ -1,6 +1,6 @@
 import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { Collisions, Constants, Geometry, Maps, Models } from '@tosios/common';
-import { DungeonMap, generate } from '@halftheopposite/dungeon';
+import { DungeonMap, MonsterType, generate } from '@halftheopposite/dungeon';
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { PropType } from '@halftheopposite/dungeon';
 import { nanoid } from 'nanoid';
@@ -144,7 +144,7 @@ export class GameState extends Schema {
                 y: item.y,
                 radius: item.w / 2,
                 rotation: 0,
-                type: 'bat', // TODO: Change this once all types are implemented
+                type: item.type as MonsterType,
                 mapWidth: this.map.width * Constants.TILE_SIZE,
                 mapHeight: this.map.height * Constants.TILE_SIZE,
                 lives: Constants.MONSTER_LIVES,

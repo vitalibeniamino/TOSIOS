@@ -1,10 +1,11 @@
 import { Circle, ICircle } from './Circle';
 import { Constants, Maths, Models } from '@tosios/common';
 import { MapSchema, type } from '@colyseus/schema';
+import { MonsterType } from '@halftheopposite/dungeon';
 import { Player } from '.';
 
 export interface IMonster extends ICircle {
-    type: Models.MonsterType;
+    type: MonsterType;
     mapWidth: number;
     mapHeight: number;
     lives: number;
@@ -14,8 +15,8 @@ export class Monster extends Circle {
     //
     // Sync fields
     //
-    @type('string')
-    private type: Models.MonsterType;
+    @type('number')
+    private type: MonsterType;
 
     @type('string')
     private state: Models.MonsterState;

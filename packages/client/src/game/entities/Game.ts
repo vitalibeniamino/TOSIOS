@@ -1,7 +1,7 @@
-import { Types } from '@tosios/common';
+import { Models } from '@tosios/common';
 
 export interface IGame {
-    state: Types.GameState;
+    state: Models.GameState;
     stateEndsAt: number;
     roomName: string;
     maxPlayers: number;
@@ -12,7 +12,7 @@ export class Game {
     //
     // Sync fields
     //
-    public state: Types.GameState;
+    public state: Models.GameState;
 
     public stateEndsAt: number;
 

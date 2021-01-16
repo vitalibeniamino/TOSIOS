@@ -1,9 +1,9 @@
-import { Constants, Models, Types } from '@tosios/common';
+import { Constants, Models } from '@tosios/common';
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { Player } from './Player';
 
 export interface IGame {
-    state: Types.GameState;
+    state: Models.GameState;
     stateEndsAt?: number;
     roomName: string;
     maxPlayers: number;
@@ -18,7 +18,7 @@ export class Game extends Schema {
     // Sync fields
     //
     @type('string')
-    public state: Types.GameState;
+    public state: Models.GameState;
 
     @type('number')
     public stateEndsAt: number;

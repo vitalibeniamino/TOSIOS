@@ -1,15 +1,15 @@
 import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
-import { Constants, Geometry, Maps, Maths, Models, Types } from '@tosios/common';
-import { DungeonMap, generate } from '@halftheopposite/dungeon';
+import { Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { Game, Monster, Player, Prop } from './entities';
-import { ImpactConfig, ImpactTexture } from './assets/particles';
 import { Emitter } from 'pixi-particles';
+import { Viewport } from 'pixi-viewport';
+import { ImpactConfig, ImpactTexture } from './assets/particles';
 import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
-import { Viewport } from 'pixi-viewport';
 import { distanceBetween } from './utils/distance';
 import { drawTiles } from './utils/tiles';
+import { generate } from '@halftheopposite/dungeon';
 
 // We don't want to scale textures linearly because they would appear blurry.
 settings.SCALE_MODE = SCALE_MODES.NEAREST;
@@ -84,7 +84,7 @@ export class GameState {
 
     private inputs: Inputs;
 
-    private map: DungeonMap;
+    private map: Map.DungeonMap;
 
     //
     // Lifecycle
@@ -160,7 +160,7 @@ export class GameState {
         this.me = null;
         this.moveActions = [];
         this.inputs = new Inputs();
-        this.map = new DungeonMap(Constants.TILE_SIZE);
+        this.map = new Map.DungeonMap(Constants.TILE_SIZE);
     }
 
     start = (renderView: any) => {
@@ -175,8 +175,6 @@ export class GameState {
         this.updatePlayers();
         this.updateMonsters();
         this.updateBullets();
-
-        this.playersManager.sortChildren();
     };
 
     private updateInputs = () => {
@@ -233,8 +231,10 @@ export class GameState {
         for (const monster of this.monstersManager.getAll()) {
             distance = Maths.getDistance(monster.x, monster.y, monster.toX, monster.toY);
             if (distance > 0.01) {
-                monster.x = Maths.lerp(monster.x, monster.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG);
-                monster.y = Maths.lerp(monster.y, monster.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG);
+                monster.setPosition(
+                    Maths.lerp(monster.x, monster.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
+                    Maths.lerp(monster.y, monster.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
+                );
             }
         }
     };
@@ -333,11 +333,17 @@ export class GameState {
 
         // Actually move the player
         this.me.move(dir.x, dir.y, Constants.PLAYER_SPEED);
+        this.map.updateItem('me', this.me.x, this.me.y);
 
+        //
         // Collisions: Walls
-        // const correctedPosition = this.walls.correctWithCircle(this.me.body);
-        // this.me.x = correctedPosition.x;
-        // this.me.y = correctedPosition.y;
+        //
+        const collidingTiles = this.map.collidesByLayer('me', 'tiles');
+        if (collidingTiles.length > 0) {
+            const correctedPlayer = this.map.correctByIdLayer('me', 'tiles');
+            this.me.x = correctedPlayer.x;
+            this.me.y = correctedPlayer.y;
+        }
     };
 
     private rotate = () => {
@@ -419,7 +425,32 @@ export class GameState {
         });
         this.map.loadDungeon(dungeon);
 
-        // 2. Draw dungeon
+        // 2. Load players
+        this.playersManager.getAll().forEach((player) => {
+            this.map.addItem(
+                player.x,
+                player.y,
+                player.body.radius * 2,
+                player.body.radius * 2,
+                'players',
+                1, // TODO: Change this once all types are implemented
+                player.id,
+            );
+        });
+
+        if (this.me) {
+            this.map.addItem(
+                this.me.body.x,
+                this.me.body.y,
+                this.me.body.radius * 2,
+                this.me.body.radius * 2,
+                'players',
+                1, // TODO: Change this once all types are implemented
+                'me',
+            );
+        }
+
+        // 3. Draw dungeon
         drawTiles(dungeon.layers.tiles, this.tilesContainer);
     };
 
@@ -452,6 +483,15 @@ export class GameState {
     playerAdd = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
         const player = new Player(attributes, isMe, this.particlesContainer);
         this.playersManager.add(playerId, player);
+        this.map.addItem(
+            player.x,
+            player.y,
+            player.body.radius * 2,
+            player.body.radius * 2,
+            'players',
+            1, // TODO: Change this once all types are implemented
+            player.id,
+        );
 
         // If the player is "you"
         if (isMe) {
@@ -459,6 +499,16 @@ export class GameState {
 
             this.playersManager.addChild(this.me.container);
             this.viewport.follow(this.me.container);
+
+            this.map.addItem(
+                player.x,
+                player.y,
+                player.body.radius * 2,
+                player.body.radius * 2,
+                'players',
+                1, // TODO: Change this once all types are implemented
+                'me',
+            );
         }
     };
 
@@ -494,8 +544,7 @@ export class GameState {
                         action.value.x,
                         action.value.y,
                         Constants.PLAYER_SPEED,
-                        // this.map,
-                        null as any, // TODO: Pass a real map
+                        this.map,
                     );
 
                     ghost.x = updatedPosition.x;
@@ -526,8 +575,7 @@ export class GameState {
 
             // Update position
             player.setPosition(player.toX, player.toY);
-            player.toX = attributes.x;
-            player.toY = attributes.y;
+            player.setToPosition(player.x, player.y);
         }
     };
 

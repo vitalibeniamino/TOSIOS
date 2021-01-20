@@ -1,5 +1,5 @@
 import { Circle, ICircle } from './Circle';
-import { Constants, Maths, Models } from '@tosios/common';
+import { Constants, Map, Maths, Models } from '@tosios/common';
 import { MapSchema, type } from '@colyseus/schema';
 import { MonsterType } from '@halftheopposite/dungeon';
 import { Player } from '.';
@@ -56,13 +56,13 @@ export class Monster extends Circle {
     //
     // Update
     //
-    update(players: MapSchema<Player>) {
+    update(players: MapSchema<Player>, map: Map.DungeonMap) {
         switch (this.state) {
             case 'idle':
                 this.updateIdle(players);
                 break;
             case 'patrol':
-                this.updatePatrol(players);
+                this.updatePatrol(players, map);
                 break;
             case 'chase':
                 this.updateChase(players);
@@ -85,7 +85,7 @@ export class Monster extends Circle {
         }
     }
 
-    updatePatrol(players: MapSchema<Player>) {
+    updatePatrol(players: MapSchema<Player>, map: Map.DungeonMap) {
         // Look for a player to chase
         if (this.lookForPlayer(players)) {
             return;
@@ -101,6 +101,14 @@ export class Monster extends Circle {
         // Move monster
         this.move(Constants.MONSTER_SPEED_PATROL, this.rotation);
 
+        const collidingItems = map.collidesByLayer(this.id, 'tiles');
+        if (collidingItems.length > 0) {
+            const correctedItem = map.correctByIdLayer(this.id, 'tiles');
+            this.x = correctedItem.x;
+            this.y = correctedItem.y;
+            this.startIdle();
+        }
+
         // Is the monster out of bounds?
         if (
             this.x < Constants.TILE_SIZE ||
@@ -110,7 +118,8 @@ export class Monster extends Circle {
         ) {
             this.x = Maths.clamp(this.x, 0, this.mapWidth);
             this.y = Maths.clamp(this.y, 0, this.mapHeight);
-            this.rotation = Maths.getRandomInt(-3, 3);
+            // this.rotation = Maths.getRandomInt(-3, 3);
+            this.startIdle();
         }
     }
 

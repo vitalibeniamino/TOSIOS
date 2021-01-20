@@ -235,6 +235,11 @@ export class Player extends Circle {
         this.spawnSmoke();
     }
 
+    setToPosition(toX: number, toY: number) {
+        this.toX = toX;
+        this.toY = toY;
+    }
+
     // Setters
     set toX(toX: number) {
         this._toX = toX;

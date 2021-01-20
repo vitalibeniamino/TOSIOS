@@ -1,8 +1,7 @@
 import { Bullet, Game, Monster, Player, Prop } from './entities';
-import { Collisions, Constants, Geometry, Maps, Models } from '@tosios/common';
-import { DungeonMap, MonsterType, generate } from '@halftheopposite/dungeon';
+import { Collisions, Constants, Geometry, Map, Maps, Models } from '@tosios/common';
 import { MapSchema, Schema, type } from '@colyseus/schema';
-import { PropType } from '@halftheopposite/dungeon';
+import { MonsterType, PropType, generate } from '@halftheopposite/dungeon';
 import { nanoid } from 'nanoid';
 
 export interface GameStateArgs {
@@ -33,7 +32,7 @@ export class GameState extends Schema {
     //
     // Local fields
     //
-    private map: DungeonMap = new DungeonMap(Constants.TILE_SIZE);
+    private map: Map.DungeonMap = new Map.DungeonMap(Constants.TILE_SIZE);
 
     private actions: Models.ActionJSON[] = [];
 
@@ -262,12 +261,11 @@ export class GameState extends Schema {
         //
         // Collisions: walls
         //
-        // const collidingItems = this.map.collidesByLayer(player.id, 'tiles');
-        // if (collidingItems.length > 0) {
-        //     const correctedPosition = this.walls.correctWithCircle(player.body);
-        //     player.setPosition(correctedPosition.x, correctedPosition.y);
-        //     this.map.updateItem(player.id, player.x, player.y);
-        // }
+        const collidingItems = this.map.collidesByLayer(player.id, 'tiles');
+        if (collidingItems.length > 0) {
+            const correctedItem = this.map.correctByIdLayer(player.id, 'tiles');
+            player.setPosition(correctedItem.x, correctedItem.y);
+        }
 
         // Acknowledge last treated action
         player.ack = ts;
@@ -368,7 +366,7 @@ export class GameState extends Schema {
         }
 
         // Update monster
-        monster.update(this.players);
+        monster.update(this.players, this.map);
         this.map.updateItem(monster.id, monster.x, monster.y);
 
         // Collisions: Players

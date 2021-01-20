@@ -70,6 +70,11 @@ export class Monster extends Circle {
         Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
     }
 
+    setPosition(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+
     //
     // Setters
     //

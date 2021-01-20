@@ -1,7 +1,6 @@
-import { CircleBody } from '../geometry';
 import { CircleJSON } from './Circle';
+import { DungeonMap } from '../map';
 import { Maths } from '..';
-import { TreeCollider } from '../collisions';
 
 export interface PlayerJSON extends CircleJSON {
     name: string;
@@ -18,7 +17,7 @@ export function movePlayer(
     dirX: number,
     dirY: number,
     speed: number,
-    walls: TreeCollider,
+    map: DungeonMap,
 ): { x: number; y: number } {
     // Move
     const magnitude = Maths.normalize2D(dirX, dirY);
@@ -27,10 +26,15 @@ export function movePlayer(
     x += speedX;
     y += speedY;
 
-    // Collide
-    // const corrected = walls.correctWithCircle(new CircleBody(x, y, radius));
-    // x = corrected.x;
-    // y = corrected.y;
+    //
+    // Collisions: Walls
+    //
+    const corrected = map.correctByItemAndLayer(
+        { x, y, w: radius * 2, h: radius * 2, type: 1, layer: 'players', id: 'ghost' },
+        'tiles',
+    );
+    x = corrected.x;
+    y = corrected.y;
 
     return { x, y };
 }

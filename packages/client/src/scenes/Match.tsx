@@ -3,7 +3,7 @@ import { Constants, Models, Types } from '@tosios/common';
 import { HUD, HUDProps } from './HUD';
 import React, { Component, RefObject } from 'react';
 import { RouteComponentProps, navigate } from '@reach/router';
-import { GameState } from '../game/Game';
+import { GameState } from '../game/State';
 import { Helmet } from 'react-helmet';
 import { View } from '../components';
 import qs from 'querystringify';

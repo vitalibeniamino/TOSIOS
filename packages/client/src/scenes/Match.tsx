@@ -233,8 +233,16 @@ export default class Match extends Component<IProps, IState> {
         this.gameState.propRemove(propId);
     };
 
-    handleBulletAdd = (bullet: Models.BulletJSON, bulletId: string) => {
+    handleBulletAdd = (bullet: any, bulletId: string) => {
         this.gameState.bulletAdd(bulletId, bullet);
+
+        bullet.onChange = () => {
+            this.handleBulletUpdate(bullet, bulletId);
+        };
+    };
+
+    handleBulletUpdate = (bullet: Models.BulletJSON, bulletId: string) => {
+        this.gameState.bulletUpdate(bulletId, bullet);
     };
 
     handleBulletRemove = (bullet: Models.BulletJSON, bulletId: string) => {

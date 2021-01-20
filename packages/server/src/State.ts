@@ -183,9 +183,7 @@ export class GameState extends Schema {
         });
     };
 
-    private handleLobbyStart = () => {
-        // TODO
-    };
+    private handleLobbyStart = () => {};
 
     private handleGameStart = () => {
         this.resetGame();
@@ -209,21 +207,21 @@ export class GameState extends Schema {
     };
 
     //
-    // Players: single
+    // Players
     //
-    playerAdd(id: string, name: string) {
+    playerAdd(playerId: string, name: string) {
         // const ladder = this.getLadderCoord();
         const player = new Player({
-            id,
+            id: playerId,
             x: 0,
             y: 0,
             radius: Constants.PLAYER_SIZE / 2,
             rotation: 0,
             lives: 0,
             maxLives: Constants.PLAYER_MAX_LIVES,
-            name: name || id,
+            name: name || playerId,
         });
-        this.players.set(id, player);
+        this.players.set(playerId, player);
         this.map.addItem(
             player.x,
             player.y,
@@ -240,17 +238,34 @@ export class GameState extends Schema {
             from: 'server',
             ts: Date.now(),
             params: {
-                name: this.players.get(id).name,
+                name: this.players.get(playerId).name,
             },
         });
     }
 
+    playerRemove(playerId: string) {
+        this.onMessage({
+            type: 'left',
+            from: 'server',
+            ts: Date.now(),
+            params: {
+                name: this.players.get(playerId).name,
+            },
+        });
+
+        this.map.removeItem(playerId);
+        this.players.delete(playerId);
+    }
+
+    //
+    // Players: Actions
+    //
     playerPushAction(action: Models.ActionJSON) {
         this.actions.push(action);
     }
 
-    private playerMove(id: string, ts: number, dir: Geometry.Vector2) {
-        const player = this.players.get(id);
+    private playerMove(playerId: string, ts: number, dir: Geometry.Vector2) {
+        const player = this.players.get(playerId);
         if (!player || dir.empty) {
             return;
         }
@@ -271,8 +286,8 @@ export class GameState extends Schema {
         player.ack = ts;
     }
 
-    private playerRotate(id: string, ts: number, rotation: number) {
-        const player = this.players.get(id);
+    private playerRotate(playerId: string, ts: number, rotation: number) {
+        const player = this.players.get(playerId);
         if (!player) {
             return;
         }
@@ -280,8 +295,8 @@ export class GameState extends Schema {
         player.setRotation(rotation);
     }
 
-    private playerShoot(id: string, ts: number, angle: number) {
-        const player = this.players.get(id);
+    private playerShoot(playerId: string, ts: number, angle: number) {
+        const player = this.players.get(playerId);
         if (!player || !player.isAlive || this.game.state !== 'game') {
             return;
         }
@@ -297,70 +312,31 @@ export class GameState extends Schema {
         const bulletX = player.x + Math.cos(angle) * Constants.PLAYER_WEAPON_SIZE;
         const bulletY = player.y + Math.sin(angle) * Constants.PLAYER_WEAPON_SIZE;
 
-        // Recycle bullets if some are unused to prevent instantiating too many
-        let inactiveId;
-        this.bullets.forEach((bullet) => {
-            if (!inactiveId && !bullet.active) {
-                inactiveId = bullet.id;
-            }
+        const bulletId = this.map.addItem(
+            bulletX,
+            bulletY,
+            Constants.BULLET_SIZE * 2,
+            Constants.BULLET_SIZE * 2,
+            'projectiles',
+            1,
+        );
+        const bullet = new Bullet({
+            id: bulletId,
+            playerId,
+            x: bulletX,
+            y: bulletY,
+            radius: Constants.BULLET_SIZE,
+            rotation: angle,
+            shotAt: Date.now(),
         });
-
-        if (!inactiveId) {
-            // this.map.addItem(bulletX, bulletY, Constants.BULLET_SIZE * 2);
-            // this.bullets.push(
-            //     new Bullet({
-            //         playerId: id,
-            //         team: player.team,
-            //         x: bulletX,
-            //         y: bulletY,
-            //         radius: Constants.BULLET_SIZE,
-            //         rotation: angle,
-            //         color: player.color,
-            //         shotAt: Date.now(),
-            //     }),
-            // );
-        } else {
-            // this.bullets[index].reset({
-            //     playerId: id,
-            //     team: player.team,
-            //     x: bulletX,
-            //     y: bulletY,
-            //     radius: Constants.BULLET_SIZE,
-            //     rotation: angle,
-            //     color: player.color,
-            //     shotAt: Date.now(),
-            // });
-        }
-    }
-
-    private playerUpdateKills(playerId: string) {
-        const player = this.players.get(playerId);
-        if (!player) {
-            return;
-        }
-
-        player.setKills(player.kills + 1);
-    }
-
-    playerRemove(id: string) {
-        this.onMessage({
-            type: 'left',
-            from: 'server',
-            ts: Date.now(),
-            params: {
-                name: this.players.get(id).name,
-            },
-        });
-
-        this.map.removeItem(id);
-        this.players.delete(id);
+        this.bullets.set(bulletId, bullet);
     }
 
     //
     // Monsters
     //
-    private monsterUpdate = (id: string) => {
-        const monster = this.monsters.get(id);
+    private monsterUpdate = (monsterId: string) => {
+        const monster = this.monsters.get(monsterId);
         if (!monster || !monster.isAlive) {
             return;
         }
@@ -393,9 +369,9 @@ export class GameState extends Schema {
         });
     };
 
-    private monsterRemove = (id: string) => {
-        this.map.removeItem(id);
-        this.monsters.delete(id);
+    private monsterRemove = (monsterId: string) => {
+        this.map.removeItem(monsterId);
+        this.monsters.delete(monsterId);
     };
 
     private monstersClear = () => {
@@ -406,13 +382,13 @@ export class GameState extends Schema {
     //
     // Props
     //
-    private propUpdate = (id: string) => {
-        const prop = this.props.get(id);
+    private propUpdate = (propId: string) => {
+        const prop = this.props.get(propId);
     };
 
-    private propRemove = (id: string) => {
-        this.map.removeItem(id);
-        this.props.delete(id);
+    private propRemove = (propId: string) => {
+        this.map.removeItem(propId);
+        this.props.delete(propId);
     };
 
     private propsClear = () => {
@@ -430,55 +406,54 @@ export class GameState extends Schema {
         }
 
         bullet.move(Constants.BULLET_SPEED);
+        this.map.updateItem(bulletId, bullet.x, bullet.y);
 
-        //
-        // Collisions: Players
-        //
-        const collidingPlayers = this.map.collidesByLayer(bullet.id, 'players');
-        if (collidingPlayers.length > 0) {
-            bullet.active = false;
+        // //
+        // // Collisions: Players
+        // //
+        // const collidingPlayers = this.map.collidesByLayer(bullet.id, 'players');
+        // if (collidingPlayers.length > 0) {
+        //     bullet.active = false;
 
-            collidingPlayers.forEach((item) => {
-                const player = this.monsters.get(item.id);
-                if (player) {
-                    player.hurt();
-                    if (!player.isAlive) {
-                        this.monsterRemove(player.id);
-                    }
-                }
-            });
-        }
+        //     collidingPlayers.forEach((item) => {
+        //         const player = this.monsters.get(item.id);
+        //         if (player) {
+        //             player.hurt();
+        //             if (!player.isAlive) {
+        //                 this.monsterRemove(player.id);
+        //             }
+        //         }
+        //     });
+        // }
 
-        this.players.forEach((player) => {
-            // Check if the bullet can hurt the player
-            if (!player.canBulletHurt(bullet.playerId) || !Collisions.circleToCircle(bullet.body, player.body)) {
-                return;
-            }
+        // this.players.forEach((player) => {
+        //     // Check if the bullet can hurt the player
+        //     if (!player.canBulletHurt(bullet.playerId) || !Collisions.circleToCircle(bullet.body, player.body)) {
+        //         return;
+        //     }
 
-            bullet.active = false;
-            player.hurt();
+        //     bullet.active = false;
+        //     player.hurt();
 
-            if (!player.isAlive) {
-                this.onMessage({
-                    type: 'killed',
-                    from: 'server',
-                    ts: Date.now(),
-                    params: {
-                        killerName: this.players[bullet.playerId].name,
-                        killedName: player.name,
-                    },
-                });
-                this.playerUpdateKills(bullet.playerId);
-            }
-        });
+        //     if (!player.isAlive) {
+        //         this.onMessage({
+        //             type: 'killed',
+        //             from: 'server',
+        //             ts: Date.now(),
+        //             params: {
+        //                 killerName: this.players[bullet.playerId].name,
+        //                 killedName: player.name,
+        //             },
+        //         });
+        //         this.playerUpdateKills(bullet.playerId);
+        //     }
+        // });
 
         //
         // Collisions: Monsters
         //
         const collidingMonsters = this.map.collidesByLayer(bullet.id, 'monsters');
         if (collidingMonsters.length > 0) {
-            bullet.active = false;
-
             collidingMonsters.forEach((item) => {
                 const monster = this.monsters[item.id];
                 if (monster) {
@@ -488,6 +463,9 @@ export class GameState extends Schema {
                     }
                 }
             });
+
+            this.bulletRemove(bulletId);
+            return;
         }
 
         //
@@ -495,13 +473,13 @@ export class GameState extends Schema {
         //
         const collidingWalls = this.map.collidesByLayer(bullet.id, 'tiles');
         if (collidingWalls.length > 0) {
-            bullet.active = false;
+            this.bulletRemove(bulletId);
         }
     };
 
-    private bulletRemove = (id: string) => {
-        this.map.removeItem(id);
-        this.bullets.delete(id);
+    private bulletRemove = (bulletId: string) => {
+        this.map.removeItem(bulletId);
+        this.bullets.delete(bulletId);
     };
 
     private bulletsClear = () => {

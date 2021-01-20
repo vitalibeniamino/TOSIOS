@@ -75,6 +75,11 @@ export class Monster extends Circle {
         this.y = y;
     }
 
+    setToPosition(toX: number, toY: number) {
+        this.toX = toX;
+        this.toY = toY;
+    }
+
     //
     // Setters
     //
@@ -109,6 +114,10 @@ export class Monster extends Circle {
 
     get toY() {
         return this._toY;
+    }
+
+    get type() {
+        return this._type;
     }
 }
 

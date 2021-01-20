@@ -20,6 +20,9 @@ export class Circle extends Entity {
 
     debug?: Graphics;
 
+    //
+    // Lifecycle
+    //
     constructor(attributes: ICircle) {
         super(attributes);
         this.container = new Container();
@@ -89,6 +92,14 @@ export class Circle extends Entity {
 
     get y(): number {
         return this.body.y;
+    }
+
+    get width(): number {
+        return this.body.width;
+    }
+
+    get height(): number {
+        return this.body.height;
     }
 
     get rotation(): number {

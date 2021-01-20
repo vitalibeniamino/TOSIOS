@@ -42,6 +42,14 @@ export class Prop extends Circle {
     }
 
     //
+    // Methods
+    //
+    setPosition(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+
+    //
     // Setters
     //
     set active(active: boolean) {

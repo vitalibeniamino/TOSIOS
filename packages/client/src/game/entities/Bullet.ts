@@ -55,7 +55,14 @@ export class Bullet extends Circle {
         this.container.sortChildren();
     }
 
+    //
     // Methods
+    //
+    setPosition(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+
     reset(bullet: Models.BulletJSON) {
         this.x = bullet.x;
         this.y = bullet.y;
@@ -95,7 +102,9 @@ export class Bullet extends Circle {
         }, 100);
     };
 
+    //
     // Setters
+    //
     set playerId(playerId: string) {
         this._playerId = playerId;
     }
@@ -111,7 +120,9 @@ export class Bullet extends Circle {
         this._shotAt = shotAt;
     }
 
+    //
     // Getters
+    //
     get playerId() {
         return this._playerId;
     }

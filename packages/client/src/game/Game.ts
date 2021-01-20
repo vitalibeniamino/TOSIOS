@@ -1,12 +1,12 @@
 import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
+import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
 import { Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
-import { Game, Monster, Player, Prop } from './entities';
-import { Emitter } from 'pixi-particles';
-import { Viewport } from 'pixi-viewport';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
+import { Emitter } from 'pixi-particles';
 import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
+import { Viewport } from 'pixi-viewport';
 import { distanceBetween } from './utils/distance';
 import { drawTiles } from './utils/tiles';
 import { generate } from '@halftheopposite/dungeon';
@@ -174,7 +174,7 @@ export class GameState {
         this.updateInputs();
         this.updatePlayers();
         this.updateMonsters();
-        this.updateBullets();
+        // this.updateBullets();
     };
 
     private updateInputs = () => {
@@ -315,6 +315,9 @@ export class GameState {
             return;
         }
 
+        //
+        // Action
+        //
         const action: Models.ActionJSON = {
             type: 'move',
             ts: Date.now(),
@@ -331,7 +334,7 @@ export class GameState {
         // Save the action for reconciliation
         this.moveActions.push(action);
 
-        // Actually move the player
+        // Move the player
         this.me.move(dir.x, dir.y, Constants.PLAYER_SPEED);
         this.map.updateItem('me', this.me.x, this.me.y);
 
@@ -376,14 +379,13 @@ export class GameState {
             return;
         }
 
-        const bulletX = this.me.x + Math.cos(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
-        const bulletY = this.me.y + Math.sin(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
-
         this.me.lastShootAt = Date.now();
 
+        // const bulletX = this.me.x + Math.cos(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
+        // const bulletY = this.me.y + Math.sin(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
         // this.bulletsManager.addOrCreate(
         //     {
-        //         id:
+        //         id: String(this.me.lastShootAt),
         //         x: bulletX,
         //         y: bulletY,
         //         radius: Constants.BULLET_SIZE,
@@ -391,11 +393,12 @@ export class GameState {
         //         active: true,
         //         fromX: bulletX,
         //         fromY: bulletY,
-        //         playerId: this.me.playerId,
+        //         playerId: this.me.id,
         //         shotAt: this.me.lastShootAt,
         //     },
         //     this.particlesContainer,
         // );
+
         this.onActionSend({
             type: 'shoot',
             ts: Date.now(),
@@ -513,6 +516,8 @@ export class GameState {
     };
 
     playerUpdate = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
+        console.log(playerId, attributes.x, attributes.y);
+
         if (isMe && this.me) {
             const ghost = this.playersManager.get(playerId);
             if (!ghost) {
@@ -595,6 +600,9 @@ export class GameState {
     monsterAdd = (monsterId: string, attributes: Models.MonsterJSON) => {
         const monster = new Monster(attributes);
         this.monstersManager.add(monsterId, monster);
+
+        // Map
+        this.map.addItem(monster.x, monster.y, monster.width, monster.height, 'monsters', monster.type, monster.id);
     };
 
     monsterUpdate = (monsterId: string, attributes: Models.MonsterJSON) => {
@@ -604,16 +612,18 @@ export class GameState {
         }
 
         monster.rotation = attributes.rotation;
+        monster.setPosition(monster.toX, monster.toY);
+        monster.setToPosition(attributes.x, attributes.y);
 
-        // Set new interpolation values
-        monster.x = monster.toX;
-        monster.y = monster.toY;
-        monster.toX = attributes.x;
-        monster.toY = attributes.y;
+        // Map
+        this.map.updateItem(monsterId, monster.toX, monster.toY);
     };
 
     monsterRemove = (monsterId: string) => {
         this.monstersManager.remove(monsterId);
+
+        // Map
+        this.map.removeItem(monsterId);
     };
 
     //
@@ -622,6 +632,9 @@ export class GameState {
     propAdd = (propId: string, attributes: Models.PropJSON) => {
         const prop = new Prop(attributes);
         this.propsManager.add(propId, prop);
+
+        // Map
+        this.map.addItem(prop.x, prop.y, prop.width, prop.height, 'props', prop.type, prop.id);
     };
 
     propUpdate = (propId: string, attributes: Models.PropJSON) => {
@@ -630,28 +643,48 @@ export class GameState {
             return;
         }
 
-        prop.x = attributes.x;
-        prop.y = attributes.y;
         prop.active = attributes.active;
+        prop.setPosition(attributes.x, attributes.y);
+
+        // Map
+        this.map.updateItem(propId, prop.x, prop.y);
     };
 
     propRemove = (propId: string) => {
         this.propsManager.remove(propId);
+
+        // Map
+        this.map.removeItem(propId);
     };
 
     //
     // Bullets
     //
     bulletAdd = (bulletId: string, attributes: Models.BulletJSON) => {
-        if ((this.me && this.me.id === attributes.playerId) || !attributes.active) {
+        const bullet = new Bullet(attributes, this.particlesContainer);
+        this.bulletsManager.add(bulletId, bullet);
+
+        // Map
+        this.map.addItem(bullet.x, bullet.y, bullet.width, bullet.height, 'projectiles', 1, bullet.id);
+    };
+
+    bulletUpdate = (bulletId: string, attributes: Models.BulletJSON) => {
+        const bullet = this.bulletsManager.get(bulletId);
+        if (!bullet) {
             return;
         }
 
-        this.bulletsManager.addOrCreate(attributes, this.particlesContainer);
+        bullet.setPosition(attributes.x, attributes.y);
+
+        // Map
+        this.map.updateItem(bulletId, bullet.x, bullet.y);
     };
 
     bulletRemove = (bulletId: string) => {
         this.bulletsManager.remove(bulletId);
+
+        // Map
+        this.map.removeItem(bulletId);
     };
 
     //

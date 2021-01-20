@@ -138,8 +138,7 @@ export class Player extends Circle {
         const speedX = Math.round(Maths.round2Digits(dirX * (speed / magnitude)));
         const speedY = Math.round(Maths.round2Digits(dirY * (speed / magnitude)));
 
-        this.x += speedX;
-        this.y += speedY;
+        this.setPosition(this.x + speedX, this.y + speedY);
     }
 
     hurt() {

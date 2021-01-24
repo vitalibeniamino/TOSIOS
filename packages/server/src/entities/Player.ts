@@ -46,7 +46,7 @@ export class Player extends Circle {
         this.lives = attributes.lives;
         this.maxLives = attributes.maxLives;
         this.kills = 0;
-        this.ack = 0;
+        this.ack = undefined;
         this.lastShootAt = undefined;
     }
 

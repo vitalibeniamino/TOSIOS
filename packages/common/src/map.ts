@@ -69,13 +69,13 @@ export class DungeonMap {
     //
 
     /** Load a newly generated dungeon. */
-    loadDungeon = (dungeon: Dungeon) => {
+    loadDungeon = (dungeon: Dungeon, layers: TileLayer[] = ['tiles', 'props', 'monsters']) => {
         this.width = dungeon.width;
         this.height = dungeon.height;
         this.items = {
-            ...tilemapToItems(dungeon.layers.tiles, 'tiles', this.tileSize),
-            ...tilemapToItems(dungeon.layers.props, 'props', this.tileSize),
-            ...tilemapToItems(dungeon.layers.monsters, 'monsters', this.tileSize),
+            ...(layers.includes('tiles') ? tilemapToItems(dungeon.layers.tiles, 'tiles', this.tileSize) : {}),
+            ...(layers.includes('props') ? tilemapToItems(dungeon.layers.props, 'props', this.tileSize) : {}),
+            ...(layers.includes('monsters') ? tilemapToItems(dungeon.layers.monsters, 'monsters', this.tileSize) : {}),
         };
 
         this.rbush.load(Object.values(this.items));

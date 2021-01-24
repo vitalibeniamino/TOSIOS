@@ -1,9 +1,8 @@
-import { Constants, Maths, Models } from '@tosios/common';
 import { Trail100Texture, Trail25Texture, Trail50Texture, TrailConfig } from '../assets/particles';
 import { Circle } from './Circle';
 import { Container } from 'pixi.js';
 import { Emitter } from 'pixi-particles';
-import { ExplosionSound } from '../assets/sounds';
+import { Models } from '@tosios/common';
 import { WeaponTextures } from '../assets/images';
 
 const ZINDEXES = {
@@ -94,14 +93,9 @@ export class Bullet extends Circle {
         }
     };
 
-    kill = (playerDistance: number) => {
+    kill = () => {
         this.active = false;
-
-        setTimeout(() => {
-            const volume = Maths.clamp(1 - Maths.normalize(playerDistance, 0, Constants.PLAYER_HEARING_DISTANCE), 0, 1);
-            ExplosionSound.volume(volume);
-            ExplosionSound.play();
-        }, 100);
+        this._trailEmitter.destroy();
     };
 
     //

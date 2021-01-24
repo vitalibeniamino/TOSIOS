@@ -233,10 +233,13 @@ export class Player extends Circle {
         this._lastSmokeAt = Date.now();
     }
 
-    setPosition(x: number, y: number) {
+    setPosition(x: number, y: number, smoke: boolean = false) {
         this.x = x;
         this.y = y;
-        this.spawnSmoke();
+
+        if (smoke) {
+            this.spawnSmoke();
+        }
     }
 
     setToPosition(toX: number, toY: number) {

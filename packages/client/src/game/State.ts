@@ -161,7 +161,7 @@ export class GameState {
         //
         // Others
         //
-        this.me = null; // TODO: initialize here
+        this.me = null;
         this.simulationBody = new Geometry.RectangleBody(0, 0, Constants.PLAYER_SIZE, Constants.PLAYER_SIZE);
         this.moveActions = [];
         this.inputs = new Inputs();
@@ -180,7 +180,7 @@ export class GameState {
             this.updateInputs();
             this.updatePlayers();
             this.updateMonsters();
-            // this.updateBullets();
+            this.updateBullets();
         }
     };
 
@@ -256,6 +256,8 @@ export class GameState {
     };
 
     private updateBullets = () => {
+        const toDelete: string[] = [];
+
         for (const bullet of this.bulletsManager.getAll()) {
             if (!bullet.active) {
                 continue;
@@ -268,9 +270,14 @@ export class GameState {
             //
             const collidingMonsters = this.map.collidesByLayer(bullet.id, 'monsters');
             if (collidingMonsters.length > 0) {
-                const firstMonster = collidingMonsters[0];
-                bullet.kill(distanceBetween(this.me?.body, bullet.body));
-                this.monstersManager.get(firstMonster.id)?.hurt();
+                toDelete.push(bullet.id);
+
+                // Hurt monsters
+                collidingMonsters.forEach((monster) => {
+                    this.monstersManager.get(monster.id)?.hurt();
+                });
+
+                // Impact
                 this.spawnImpact(bullet.x, bullet.y);
                 continue;
             }
@@ -280,11 +287,26 @@ export class GameState {
             //
             const collidingWalls = this.map.collidesByLayer(bullet.id, 'tiles');
             if (collidingWalls.length > 0) {
-                bullet.kill(distanceBetween(this.me?.body, bullet.body));
+                toDelete.push(bullet.id);
+
+                // Impact
                 this.spawnImpact(bullet.x, bullet.y);
                 continue;
             }
+
+            this.map.updateItem(bullet.id, bullet.x, bullet.y);
         }
+
+        // Delete dead bullets
+        toDelete.forEach((bulletId) => {
+            const bullet = this.bulletsManager.get(bulletId);
+            if (!bullet) {
+                return;
+            }
+            bullet.kill();
+            this.bulletsManager.remove(bulletId);
+            this.map.removeItem(bulletId);
+        });
     };
 
     stop = () => {
@@ -329,7 +351,7 @@ export class GameState {
 
         // Compute collisions
         const correctedPosition = this.computePlayerCollisions(this.me);
-        this.me.setPosition(correctedPosition.x, correctedPosition.y);
+        this.me.setPosition(correctedPosition.x, correctedPosition.y, true);
 
         // Update in map
         this.map.updateItem(ME_ID, this.me.x, this.me.y);
@@ -360,30 +382,15 @@ export class GameState {
     };
 
     private shoot = () => {
-        if (!this.me || this.game.state !== 'game' || !this.me.canShoot()) {
+        if (!this.me || !this.me.canShoot()) {
             return;
         }
 
         this.me.lastShootAt = Date.now();
 
-        // const bulletX = this.me.x + Math.cos(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
-        // const bulletY = this.me.y + Math.sin(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
-        // this.bulletsManager.addOrCreate(
-        //     {
-        //         id: String(this.me.lastShootAt),
-        //         x: bulletX,
-        //         y: bulletY,
-        //         radius: Constants.BULLET_SIZE,
-        //         rotation: this.me.rotation,
-        //         active: true,
-        //         fromX: bulletX,
-        //         fromY: bulletY,
-        //         playerId: this.me.id,
-        //         shotAt: this.me.lastShootAt,
-        //     },
-        //     this.particlesContainer,
-        // );
-
+        //
+        // Action
+        //
         this.onActionSend({
             type: 'shoot',
             ts: Date.now(),
@@ -392,6 +399,30 @@ export class GameState {
                 angle: this.me.rotation,
             },
         });
+
+        //
+        // Bullet
+        //
+        const bulletX = this.me.x + Math.cos(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
+        const bulletY = this.me.y + Math.sin(this.me.rotation) * Constants.PLAYER_WEAPON_SIZE;
+        const bullet = new Bullet(
+            {
+                id: String(this.me.lastShootAt),
+                x: bulletX,
+                y: bulletY,
+                radius: Constants.BULLET_SIZE,
+                rotation: this.me.rotation,
+                active: true,
+                fromX: bulletX,
+                fromY: bulletY,
+                playerId: this.me.id,
+                type: Models.BulletType.Magic,
+                shotAt: this.me.lastShootAt,
+            },
+            this.particlesContainer,
+        );
+        this.bulletsManager.add(bullet.id, bullet);
+        this.map.addItem(bullet.x, bullet.y, bullet.width, bullet.height, 'projectiles', bullet.type, bullet.id);
     };
 
     //
@@ -411,7 +442,7 @@ export class GameState {
             ...Maps.DEFAULT_DUNGEON,
             seed: this.game.seed,
         });
-        this.map.loadDungeon(dungeon);
+        this.map.loadDungeon(dungeon, ['tiles']);
 
         // 3. Load players
         this.playersManager.getAll().forEach((player) => {
@@ -598,6 +629,11 @@ export class GameState {
     // Bullets
     //
     bulletAdd = (bulletId: string, attributes: Models.BulletJSON) => {
+        // We don't want to add our own bullet as we already did
+        if (this.me && this.me.id === attributes.playerId) {
+            return;
+        }
+
         const bullet = new Bullet(attributes, this.particlesContainer);
         this.bulletsManager.add(bulletId, bullet);
 
@@ -618,6 +654,10 @@ export class GameState {
     };
 
     bulletRemove = (bulletId: string) => {
+        const bullet = this.bulletsManager.get(bulletId);
+        if (!bullet) {
+            return;
+        }
         this.bulletsManager.remove(bulletId);
 
         // Map

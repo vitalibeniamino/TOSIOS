@@ -1,8 +1,9 @@
 import { Circle, ICircle } from './Circle';
-import { Maths } from '@tosios/common';
+import { Models } from '@tosios/common';
 import { type } from '@colyseus/schema';
 
 export interface IPlayer extends ICircle {
+    type: Models.PlayerType;
     name: string;
     lives: number;
     maxLives: number;
@@ -12,6 +13,9 @@ export class Player extends Circle {
     //
     // Sync fields
     //
+    @type('number')
+    public type: Models.PlayerType;
+
     @type('string')
     public name: string;
 
@@ -37,6 +41,7 @@ export class Player extends Circle {
     //
     constructor(attributes: IPlayer) {
         super(attributes);
+        this.type = attributes.type;
         this.name = validateName(attributes.name);
         this.lives = attributes.lives;
         this.maxLives = attributes.maxLives;
@@ -49,13 +54,12 @@ export class Player extends Circle {
     // Methods
     //
     move(dirX: number, dirY: number, speed: number) {
-        const magnitude = Maths.normalize2D(dirX, dirY);
-
-        const speedX = Math.round(Maths.round2Digits(dirX * (speed / magnitude)));
-        const speedY = Math.round(Maths.round2Digits(dirY * (speed / magnitude)));
-
-        this.x += speedX;
-        this.y += speedY;
+        const { x, y } = Models.movePlayer(
+            { x: this.x, y: this.y, w: this.radius * 2, h: this.radius * 2 },
+            { x: dirX, y: dirY },
+            speed,
+        );
+        this.setPosition(x, y);
     }
 
     hurt() {

@@ -15,6 +15,8 @@ import { generate } from '@halftheopposite/dungeon';
 settings.SCALE_MODE = SCALE_MODES.NEAREST;
 settings.ROUND_PIXELS = true;
 
+const ME_ID = 'me';
+const MAX_DISTANCE = 0.1;
 const ZINDEXES = {
     GROUND: 1,
     PROPS: 2,
@@ -79,6 +81,8 @@ export class GameState {
     private onActionSend: (action: Models.ActionJSON) => void;
 
     private me: Player | null;
+
+    private simulationBody: Geometry.RectangleBody;
 
     private moveActions: Models.ActionJSON[];
 
@@ -157,7 +161,8 @@ export class GameState {
         //
         // Others
         //
-        this.me = null;
+        this.me = null; // TODO: initialize here
+        this.simulationBody = new Geometry.RectangleBody(0, 0, Constants.PLAYER_SIZE, Constants.PLAYER_SIZE);
         this.moveActions = [];
         this.inputs = new Inputs();
         this.map = new Map.DungeonMap(Constants.TILE_SIZE);
@@ -171,10 +176,12 @@ export class GameState {
     };
 
     private update = () => {
-        this.updateInputs();
-        this.updatePlayers();
-        this.updateMonsters();
-        // this.updateBullets();
+        if (this.game.state === 'game') {
+            this.updateInputs();
+            this.updatePlayers();
+            this.updateMonsters();
+            // this.updateBullets();
+        }
     };
 
     private updateInputs = () => {
@@ -215,13 +222,22 @@ export class GameState {
         let distance;
 
         for (const player of this.playersManager.getAll()) {
+            // Don't update "me"
+            if (this.me && player.id === this.me.id && !player.isGhost) {
+                continue;
+            }
+
             distance = Maths.getDistance(player.x, player.y, player.toX, player.toY);
-            if (distance > 0.01) {
+            if (distance > MAX_DISTANCE) {
                 player.setPosition(
                     Maths.lerp(player.x, player.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
                     Maths.lerp(player.y, player.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
                 );
+            } else {
+                player.setPosition(player.toX, player.toY);
             }
+
+            this.map.updateItem(player.id, player.x, player.y);
         }
     };
 
@@ -230,7 +246,7 @@ export class GameState {
 
         for (const monster of this.monstersManager.getAll()) {
             distance = Maths.getDistance(monster.x, monster.y, monster.toX, monster.toY);
-            if (distance > 0.01) {
+            if (distance > MAX_DISTANCE) {
                 monster.setPosition(
                     Maths.lerp(monster.x, monster.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
                     Maths.lerp(monster.y, monster.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
@@ -246,36 +262,6 @@ export class GameState {
             }
 
             bullet.move(Constants.BULLET_SPEED);
-
-            //
-            // Collisions: Players
-            //
-            // for (const player of this.playersManager.getAll()) {
-            //     // Check if the bullet can hurt the player
-            //     if (!player.canBulletHurt(bullet.playerId) || !Collisions.circleToCircle(bullet.body, player.body)) {
-            //         continue;
-            //     }
-
-            //     bullet.kill(distanceBetween(this.me?.body, bullet.body));
-            //     player.hurt();
-            //     this.spawnImpact(bullet.x, bullet.y);
-            //     continue;
-            // }
-
-            //
-            // Collisions: Me
-            //
-            // if (
-            //     this.me &&
-            //     this.me.canBulletHurt(bullet.playerId) &&
-            //     this.me.lives &&
-            //     Collisions.circleToCircle(bullet.body, this.me.body)
-            // ) {
-            //     bullet.kill(distanceBetween(this.me?.body, bullet.body));
-            //     this.me.hurt();
-            //     this.spawnImpact(bullet.x, bullet.y);
-            //     continue;
-            // }
 
             //
             // Collisions: Monsters
@@ -334,19 +320,19 @@ export class GameState {
         // Save the action for reconciliation
         this.moveActions.push(action);
 
+        //
+        // Movements
+        //
+
         // Move the player
         this.me.move(dir.x, dir.y, Constants.PLAYER_SPEED);
-        this.map.updateItem('me', this.me.x, this.me.y);
 
-        //
-        // Collisions: Walls
-        //
-        const collidingTiles = this.map.collidesByLayer('me', 'tiles');
-        if (collidingTiles.length > 0) {
-            const correctedPlayer = this.map.correctByIdLayer('me', 'tiles');
-            this.me.x = correctedPlayer.x;
-            this.me.y = correctedPlayer.y;
-        }
+        // Compute collisions
+        const correctedPosition = this.computePlayerCollisions(this.me);
+        this.me.setPosition(correctedPosition.x, correctedPosition.y);
+
+        // Update in map
+        this.map.updateItem(ME_ID, this.me.x, this.me.y);
     };
 
     private rotate = () => {
@@ -360,7 +346,6 @@ export class GameState {
         const rotation = Maths.round2Digits(
             Maths.calculateAngle(mouse.x, mouse.y, screenPlayerPosition.x, screenPlayerPosition.y),
         );
-
         if (this.me.rotation !== rotation) {
             this.me.rotation = rotation;
             this.onActionSend({
@@ -417,43 +402,27 @@ export class GameState {
             return;
         }
 
-        // Reset current states
+        // 1. Reset current states
         this.map.clearDungeon();
         this.tilesContainer.removeChildren();
 
-        // 1. Create dungeon using seed from server
+        // 2. Create dungeon using seed from server
         const dungeon = generate({
             ...Maps.DEFAULT_DUNGEON,
             seed: this.game.seed,
         });
         this.map.loadDungeon(dungeon);
 
-        // 2. Load players
+        // 3. Load players
         this.playersManager.getAll().forEach((player) => {
-            this.map.addItem(
-                player.x,
-                player.y,
-                player.body.radius * 2,
-                player.body.radius * 2,
-                'players',
-                1, // TODO: Change this once all types are implemented
-                player.id,
-            );
+            this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
         });
 
         if (this.me) {
-            this.map.addItem(
-                this.me.body.x,
-                this.me.body.y,
-                this.me.body.radius * 2,
-                this.me.body.radius * 2,
-                'players',
-                1, // TODO: Change this once all types are implemented
-                'me',
-            );
+            this.map.addItem(this.me.x, this.me.y, this.me.width, this.me.height, 'players', this.me.type, ME_ID);
         }
 
-        // 3. Draw dungeon
+        // 4. Draw dungeon
         drawTiles(dungeon.layers.tiles, this.tilesContainer);
     };
 
@@ -486,110 +455,78 @@ export class GameState {
     playerAdd = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
         const player = new Player(attributes, isMe, this.particlesContainer);
         this.playersManager.add(playerId, player);
-        this.map.addItem(
-            player.x,
-            player.y,
-            player.body.radius * 2,
-            player.body.radius * 2,
-            'players',
-            1, // TODO: Change this once all types are implemented
-            player.id,
-        );
+        this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
 
-        // If the player is "you"
         if (isMe) {
             this.me = new Player(attributes, false, this.particlesContainer);
-
-            this.playersManager.addChild(this.me.container);
+            this.playersManager.add(ME_ID, this.me);
             this.viewport.follow(this.me.container);
 
-            this.map.addItem(
-                player.x,
-                player.y,
-                player.body.radius * 2,
-                player.body.radius * 2,
-                'players',
-                1, // TODO: Change this once all types are implemented
-                'me',
-            );
+            this.map.addItem(this.me.x, this.me.y, this.me.width, this.me.height, 'players', this.me.type, ME_ID);
         }
     };
 
     playerUpdate = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
-        console.log(playerId, attributes.x, attributes.y);
+        const player = this.playersManager.get(playerId);
+        if (!player) {
+            return;
+        }
+
+        // Update the player normally (or the current player's ghost)
+        player.lives = attributes.lives;
+        player.maxLives = attributes.maxLives;
+        player.kills = attributes.kills;
+        player.rotation = attributes.rotation;
+        player.setPosition(player.toX, player.toY);
+        player.setToPosition(attributes.x, attributes.y);
+        this.map.updateItem(playerId, player.x, player.y);
 
         if (isMe && this.me) {
-            const ghost = this.playersManager.get(playerId);
-            if (!ghost) {
-                return;
-            }
-
-            // Update base
             this.me.lives = attributes.lives;
             this.me.maxLives = attributes.maxLives;
             this.me.kills = attributes.kills;
 
-            if (attributes.ack !== this.me.ack) {
+            if (this.me.ack !== attributes.ack && attributes.ack === 0) {
+                this.me.setPosition(attributes.x, attributes.y);
+                this.map.updateItem(ME_ID, this.me.x, this.me.y);
+            }
+
+            //
+            // Server reconciliation
+            //
+            if (this.me.ack !== attributes.ack) {
                 this.me.ack = attributes.ack;
 
-                // Update ghost position
-                ghost.x = attributes.x;
-                ghost.y = attributes.y;
-                ghost.toX = attributes.x;
-                ghost.toY = attributes.y;
-
-                // Run simulation of all movements that weren't treated by server yet
+                // Slice all actions already acknowledged by server
                 const index = this.moveActions.findIndex((action) => action.ts === attributes.ack);
                 this.moveActions = this.moveActions.slice(index + 1);
-                this.moveActions.forEach((action) => {
-                    const updatedPosition = Models.movePlayer(
-                        ghost.x,
-                        ghost.y,
-                        ghost.body.radius,
-                        action.value.x,
-                        action.value.y,
-                        Constants.PLAYER_SPEED,
-                        this.map,
-                    );
 
-                    ghost.x = updatedPosition.x;
-                    ghost.y = updatedPosition.y;
-                    ghost.toX = updatedPosition.x;
-                    ghost.toY = updatedPosition.y;
-                });
+                // Are there remaining actions?
+                if (this.moveActions.length > 0) {
+                    this.simulationBody.x = attributes.x;
+                    this.simulationBody.y = attributes.y;
 
-                // Check if our predictions were accurate
-                const distance = Maths.getDistance(this.me.x, this.me.y, ghost.x, ghost.y);
-                if (distance > 0) {
-                    this.me.setPosition(ghost.x, ghost.y);
+                    // Run simulation
+                    const correctedPosition = this.runActionsSimulation(this.simulationBody, this.moveActions);
+
+                    // Check if our predictions were accurate, if not, force position of user
+                    const distance = Maths.getDistance(this.me.x, this.me.y, correctedPosition.x, correctedPosition.y);
+                    if (distance > MAX_DISTANCE) {
+                        this.me.setPosition(correctedPosition.x, correctedPosition.y);
+                        this.map.updateItem(ME_ID, this.me.x, this.me.y);
+                    }
                 }
             }
-        } else {
-            const player = this.playersManager.get(playerId);
-            if (!player) {
-                return;
-            }
-
-            // Update base
-            player.lives = attributes.lives;
-            player.maxLives = attributes.maxLives;
-            player.kills = attributes.kills;
-
-            // Update rotation
-            player.rotation = attributes.rotation;
-
-            // Update position
-            player.setPosition(player.toX, player.toY);
-            player.setToPosition(player.x, player.y);
         }
     };
 
     playerRemove = (playerId: string, isMe: boolean) => {
         this.playersManager.remove(playerId);
+        this.map.removeItem(playerId);
 
-        // If the player is "you"
         if (isMe && this.me) {
-            this.playersManager.removeChild(this.me.container);
+            this.playersManager.remove(ME_ID);
+            this.map.removeItem(ME_ID);
             this.me = null;
         }
     };
@@ -665,7 +602,7 @@ export class GameState {
         this.bulletsManager.add(bulletId, bullet);
 
         // Map
-        this.map.addItem(bullet.x, bullet.y, bullet.width, bullet.height, 'projectiles', 1, bullet.id);
+        this.map.addItem(bullet.x, bullet.y, bullet.width, bullet.height, 'projectiles', bullet.type, bullet.id);
     };
 
     bulletUpdate = (bulletId: string, attributes: Models.BulletJSON) => {
@@ -690,18 +627,77 @@ export class GameState {
     //
     // Utils
     //
-    private spawnImpact = (x: number, y: number, color = '#ffffff') => {
+    private spawnImpact = (x: number, y: number) => {
         new Emitter(this.playersManager, [ImpactTexture], {
             ...ImpactConfig,
             color: {
-                start: color,
-                end: color,
+                start: '#ffffff',
+                end: '#ffffff',
             },
             pos: {
                 x,
                 y,
             },
         }).playOnceAndDestroy();
+    };
+
+    private computePlayerCollisions = (player: Player): { x: number; y: number } => {
+        let { x, y } = player;
+
+        //
+        // Collisions: Walls
+        //
+        const corrected = this.map.correctByItemAndLayer(
+            {
+                x: player.x,
+                y: player.y,
+                w: player.width,
+                h: player.height,
+                type: player.type,
+                layer: 'players',
+                id: player.id,
+            },
+            'tiles',
+        );
+        x = corrected.x;
+        y = corrected.y;
+
+        return { x, y };
+    };
+
+    private runActionsSimulation = (
+        body: Geometry.RectangleBody,
+        actions: Models.ActionJSON[],
+    ): { x: number; y: number } => {
+        let { x, y } = body;
+
+        actions.forEach((action) => {
+            // Move
+            const moved = Models.movePlayer(
+                { x, y, w: body.width, h: body.height },
+                action.value,
+                Constants.PLAYER_SPEED,
+            );
+
+            // Collide
+            const corrected = this.map.correctByItemAndLayer(
+                {
+                    x: moved.x,
+                    y: moved.y,
+                    w: body.width,
+                    h: body.height,
+                    type: 0,
+                    layer: 'players',
+                    id: 'none',
+                },
+                'tiles',
+            );
+
+            x = corrected.x;
+            y = corrected.y;
+        });
+
+        return { x, y };
     };
 
     setScreenSize = (screenWidth: number, screenHeight: number) => {
@@ -716,6 +712,7 @@ export class GameState {
 
     getStats = (): Stats => {
         const players: Models.PlayerJSON[] = this.playersManager.getAll().map((player) => ({
+            type: player.type,
             id: player.id,
             x: player.x,
             y: player.y,

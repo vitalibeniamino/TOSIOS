@@ -1,9 +1,10 @@
+import { BulletType, PlayerType } from './models';
 import { Dungeon, MonsterType, PropType, TileLayer, TileMap, TileType } from '@halftheopposite/dungeon';
 import RBush from 'rbush';
 import { nanoid } from 'nanoid';
 
 export type ItemLayer = TileLayer | 'players' | 'projectiles';
-export type ItemType = TileType | PropType | MonsterType;
+export type ItemType = TileType | PropType | MonsterType | PlayerType | BulletType;
 export interface Item {
     x: number;
     y: number;
@@ -157,16 +158,16 @@ export class DungeonMap {
             const side = rectangleToRectangleSide(updatedItem, collidingItem);
             switch (side) {
                 case 'left':
-                    updatedItem.x = collidingItem.x - updatedItem.w - 1;
+                    updatedItem.x = collidingItem.x - updatedItem.w;
                     break;
                 case 'top':
-                    updatedItem.y = collidingItem.y - updatedItem.h - 1;
+                    updatedItem.y = collidingItem.y - updatedItem.h;
                     break;
                 case 'right':
-                    updatedItem.x = collidingItem.x + collidingItem.w + 1;
+                    updatedItem.x = collidingItem.x + collidingItem.w;
                     break;
                 case 'bottom':
-                    updatedItem.y = collidingItem.y + collidingItem.h + 1;
+                    updatedItem.y = collidingItem.y + collidingItem.h;
                     break;
                 default:
                     break;
@@ -192,16 +193,16 @@ export class DungeonMap {
             const side = rectangleToRectangleSide(updatedItem, collidingItem);
             switch (side) {
                 case 'left':
-                    updatedItem.x = collidingItem.x - updatedItem.w - 1;
+                    updatedItem.x = collidingItem.x - updatedItem.w;
                     break;
                 case 'top':
-                    updatedItem.y = collidingItem.y - updatedItem.h - 1;
+                    updatedItem.y = collidingItem.y - updatedItem.h;
                     break;
                 case 'right':
-                    updatedItem.x = collidingItem.x + collidingItem.w + 1;
+                    updatedItem.x = collidingItem.x + collidingItem.w;
                     break;
                 case 'bottom':
-                    updatedItem.y = collidingItem.y + collidingItem.h + 1;
+                    updatedItem.y = collidingItem.y + collidingItem.h;
                     break;
                 default:
                     break;

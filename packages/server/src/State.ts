@@ -64,10 +64,13 @@ export class GameState extends Schema {
     //
     update() {
         this.updateGame();
-        this.updatePlayers();
-        this.updateMonsters();
-        this.updateProps();
-        this.updateBullets();
+
+        if (this.game.state === 'game') {
+            this.updatePlayers();
+            this.updateMonsters();
+            this.updateProps();
+            this.updateBullets();
+        }
     }
 
     private updateGame() {
@@ -177,7 +180,7 @@ export class GameState extends Schema {
                 player.radius * 2,
                 player.radius * 2,
                 'players',
-                1, // TODO: Change this once all types are implemented
+                player.type,
                 player.id,
             );
         });
@@ -210,11 +213,12 @@ export class GameState extends Schema {
     // Players
     //
     playerAdd(playerId: string, name: string) {
-        // const ladder = this.getLadderCoord();
+        const ladder = this.getLadderCoord();
         const player = new Player({
+            type: Models.PlayerType.Wizard,
             id: playerId,
-            x: 0,
-            y: 0,
+            x: ladder.x,
+            y: ladder.y,
             radius: Constants.PLAYER_SIZE / 2,
             rotation: 0,
             lives: 0,
@@ -222,15 +226,7 @@ export class GameState extends Schema {
             name: name || playerId,
         });
         this.players.set(playerId, player);
-        this.map.addItem(
-            player.x,
-            player.y,
-            player.radius * 2,
-            player.radius * 2,
-            'players',
-            1, // TODO: Change this once all types are implemented
-            player.id,
-        );
+        this.map.addItem(player.x, player.y, player.radius * 2, player.radius * 2, 'players', player.type, player.id);
 
         // Broadcast message to other players
         this.onMessage({
@@ -322,11 +318,12 @@ export class GameState extends Schema {
         );
         const bullet = new Bullet({
             id: bulletId,
-            playerId,
             x: bulletX,
             y: bulletY,
             radius: Constants.BULLET_SIZE,
             rotation: angle,
+            type: Models.BulletType.Magic,
+            playerId,
             shotAt: Date.now(),
         });
         this.bullets.set(bulletId, bullet);
@@ -408,47 +405,6 @@ export class GameState extends Schema {
         bullet.move(Constants.BULLET_SPEED);
         this.map.updateItem(bulletId, bullet.x, bullet.y);
 
-        // //
-        // // Collisions: Players
-        // //
-        // const collidingPlayers = this.map.collidesByLayer(bullet.id, 'players');
-        // if (collidingPlayers.length > 0) {
-        //     bullet.active = false;
-
-        //     collidingPlayers.forEach((item) => {
-        //         const player = this.monsters.get(item.id);
-        //         if (player) {
-        //             player.hurt();
-        //             if (!player.isAlive) {
-        //                 this.monsterRemove(player.id);
-        //             }
-        //         }
-        //     });
-        // }
-
-        // this.players.forEach((player) => {
-        //     // Check if the bullet can hurt the player
-        //     if (!player.canBulletHurt(bullet.playerId) || !Collisions.circleToCircle(bullet.body, player.body)) {
-        //         return;
-        //     }
-
-        //     bullet.active = false;
-        //     player.hurt();
-
-        //     if (!player.isAlive) {
-        //         this.onMessage({
-        //             type: 'killed',
-        //             from: 'server',
-        //             ts: Date.now(),
-        //             params: {
-        //                 killerName: this.players[bullet.playerId].name,
-        //                 killedName: player.name,
-        //             },
-        //         });
-        //         this.playerUpdateKills(bullet.playerId);
-        //     }
-        // });
-
         //
         // Collisions: Monsters
         //
@@ -492,15 +448,17 @@ export class GameState extends Schema {
     //
     private getLadderCoord(): { x: number; y: number } {
         const ladders = this.map.listItemsByLayerAndTypes('props', PropType.Ladder);
-        if (!ladders || !ladders.length) {
-            throw new Error(`Couldn't find a spawn point in map with seed "${this.game.seed}"`);
+
+        if (ladders.length > 0) {
+            return ladders[0];
         }
 
-        return ladders[0];
+        return { x: 0, y: 0 };
     }
 
     private setPlayersActive(active: boolean) {
         this.players.forEach((player) => {
+            player.ack = active ? 0 : player.ack;
             player.setLives(active ? player.maxLives : 0);
         });
     }

@@ -27,6 +27,8 @@ export class Player extends Circle {
     //
     // Sync fields
     //
+    private _type: Models.PlayerType = Models.PlayerType.Wizard;
+
     private _name: string = '';
 
     private _lives: number = 0;
@@ -117,6 +119,7 @@ export class Player extends Circle {
         this._particlesContainer = particlesContainer;
 
         // Player
+        this.type = player.type;
         this.toX = player.x;
         this.toY = player.y;
         this.rotation = player.rotation;
@@ -129,16 +132,18 @@ export class Player extends Circle {
         // Ghost
         if (isGhost) {
             this.visible = Constants.DEBUG;
+            this.container.alpha = 0.5;
         }
     }
 
     // Methods
     move(dirX: number, dirY: number, speed: number) {
-        const magnitude = Maths.normalize2D(dirX, dirY);
-        const speedX = Math.round(Maths.round2Digits(dirX * (speed / magnitude)));
-        const speedY = Math.round(Maths.round2Digits(dirY * (speed / magnitude)));
-
-        this.setPosition(this.x + speedX, this.y + speedY);
+        const { x, y } = Models.movePlayer(
+            { x: this.x, y: this.y, w: this.width, h: this.height },
+            { x: dirX, y: dirY },
+            speed,
+        );
+        this.setPosition(x, y);
     }
 
     hurt() {
@@ -240,6 +245,10 @@ export class Player extends Circle {
     }
 
     // Setters
+    set type(type: Models.PlayerType) {
+        this._type = type;
+    }
+
     set toX(toX: number) {
         this._toX = toX;
     }
@@ -323,6 +332,10 @@ export class Player extends Circle {
     }
 
     // Getters
+    get type(): Models.PlayerType {
+        return this._type;
+    }
+
     get toX(): number {
         return this._toX;
     }

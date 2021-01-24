@@ -1,7 +1,9 @@
 import { Circle, ICircle } from './Circle';
+import { Models } from '@tosios/common';
 import { type } from '@colyseus/schema';
 
 export interface IBullet extends ICircle {
+    type: Models.BulletType;
     playerId: string;
     rotation: number;
     shotAt: number;
@@ -11,6 +13,9 @@ export class Bullet extends Circle {
     //
     // Sync fields
     //
+    @type('number')
+    public type: Models.BulletType;
+
     @type('string')
     public playerId: string;
 
@@ -31,6 +36,7 @@ export class Bullet extends Circle {
     //
     constructor(attributes: IBullet) {
         super(attributes);
+        this.type = attributes.type;
         this.playerId = attributes.playerId;
         this.fromX = attributes.x;
         this.fromY = attributes.y;

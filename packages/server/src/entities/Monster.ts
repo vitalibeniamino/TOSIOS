@@ -16,10 +16,10 @@ export class Monster extends Circle {
     // Sync fields
     //
     @type('number')
-    private type: MonsterType;
+    public type: MonsterType;
 
     @type('string')
-    private state: Models.MonsterState;
+    public state: Models.MonsterState;
 
     //
     // Local fields
@@ -73,16 +73,15 @@ export class Monster extends Circle {
     }
 
     updateIdle(players: MapSchema<Player>) {
-        // Look for a player to chase
-        if (this.lookForPlayer(players)) {
-            return;
-        }
-
-        // Is state over?
-        const delta = Date.now() - this.lastActionAt;
-        if (delta > this.idleDuration) {
-            this.startPatrol();
-        }
+        // // Look for a player to chase
+        // if (this.lookForPlayer(players)) {
+        //     return;
+        // }
+        // // Is state over?
+        // const delta = Date.now() - this.lastActionAt;
+        // if (delta > this.idleDuration) {
+        //     this.startPatrol();
+        // }
     }
 
     updatePatrol(players: MapSchema<Player>, map: Map.DungeonMap) {

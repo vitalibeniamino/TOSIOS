@@ -1,8 +1,11 @@
+import { normalize2D, round2Digits } from '../maths';
 import { CircleJSON } from './Circle';
-import { DungeonMap } from '../map';
-import { Maths } from '..';
 
+export enum PlayerType {
+    Wizard = 1,
+}
 export interface PlayerJSON extends CircleJSON {
+    type: PlayerType;
     name: string;
     lives: number;
     maxLives: number;
@@ -11,30 +14,17 @@ export interface PlayerJSON extends CircleJSON {
 }
 
 export function movePlayer(
-    x: number,
-    y: number,
-    radius: number,
-    dirX: number,
-    dirY: number,
+    player: { x: number; y: number; w: number; h: number },
+    dir: { x: number; y: number },
     speed: number,
-    map: DungeonMap,
 ): { x: number; y: number } {
-    // Move
-    const magnitude = Maths.normalize2D(dirX, dirY);
-    const speedX = Math.round(Maths.round2Digits(dirX * (speed / magnitude)));
-    const speedY = Math.round(Maths.round2Digits(dirY * (speed / magnitude)));
-    x += speedX;
-    y += speedY;
+    const magnitude = normalize2D(dir.x, dir.y);
 
-    //
-    // Collisions: Walls
-    //
-    const corrected = map.correctByItemAndLayer(
-        { x, y, w: radius * 2, h: radius * 2, type: 1, layer: 'players', id: 'ghost' },
-        'tiles',
-    );
-    x = corrected.x;
-    y = corrected.y;
+    const speedX = Math.round(round2Digits(dir.x * (speed / magnitude)));
+    const speedY = Math.round(round2Digits(dir.y * (speed / magnitude)));
 
-    return { x, y };
+    player.x += speedX;
+    player.y += speedY;
+
+    return { x: player.x, y: player.y };
 }

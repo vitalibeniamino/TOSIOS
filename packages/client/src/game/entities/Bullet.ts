@@ -14,6 +14,8 @@ export class Bullet extends Circle {
     //
     // Sync fields
     //
+    private _type: Models.BulletType = Models.BulletType.Magic;
+
     private _playerId: string = '';
 
     //
@@ -105,6 +107,10 @@ export class Bullet extends Circle {
     //
     // Setters
     //
+    set type(type: Models.BulletType) {
+        this._type = type;
+    }
+
     set playerId(playerId: string) {
         this._playerId = playerId;
     }
@@ -123,6 +129,10 @@ export class Bullet extends Circle {
     //
     // Getters
     //
+    get type(): Models.BulletType {
+        return this._type;
+    }
+
     get playerId() {
         return this._playerId;
     }

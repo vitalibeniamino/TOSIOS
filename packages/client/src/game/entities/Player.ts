@@ -1,5 +1,5 @@
-import { Constants, Maths, Models } from '@tosios/common';
-import { Container, Graphics, Sprite, Texture, utils } from 'pixi.js';
+import { Constants, Models } from '@tosios/common';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { Effects, PlayerLivesSprite, TextSprite } from '../sprites';
 import { PlayerTextures, WeaponTextures } from '../assets/images';
 import { SmokeConfig, SmokeTexture } from '../assets/particles';

@@ -7,7 +7,6 @@ import { Emitter } from 'pixi-particles';
 import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
 import { Viewport } from 'pixi-viewport';
-import { distanceBetween } from './utils/distance';
 import { drawTiles } from './utils/tiles';
 import { generate } from '@halftheopposite/dungeon';
 

@@ -439,6 +439,27 @@ export class GameState extends Schema {
         const collidingWalls = this.map.collidesById(bullet.id, ['tiles'], [TileType.Wall]);
         if (collidingWalls.length > 0) {
             this.bulletRemove(bulletId);
+            return;
+        }
+
+        //
+        // Collisions: Props
+        //
+        const collidingProps = this.map.collidesById(bullet.id, ['props'], Collisions.BULLET_PROPS);
+        if (collidingProps.length > 0) {
+            collidingProps.forEach((item) => {
+                if (Collisions.HURTABLE_PROPS.includes(item.type as PropType)) {
+                    const prop = this.props[item.id];
+                    if (prop) {
+                        prop.hurt();
+                        if (!prop.isAlive) {
+                            this.propRemove(prop.id);
+                        }
+                    }
+                }
+            });
+
+            this.bulletRemove(bulletId);
         }
     };
 

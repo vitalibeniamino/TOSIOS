@@ -1,8 +1,10 @@
 import { Circle } from './Circle';
+import { Effects } from '../sprites';
 import { Models } from '@tosios/common';
 import { PropTextures } from '../assets/images';
 import { PropType } from '@halftheopposite/dungeon';
 
+const HURT_COLOR = 0xff0000;
 const ZINDEXES = {
     SHADOW: 0,
     PROP: 1,
@@ -44,6 +46,10 @@ export class Prop extends Circle {
     //
     // Methods
     //
+    hurt() {
+        Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
+    }
+
     setPosition(x: number, y: number) {
         this.x = x;
         this.y = y;

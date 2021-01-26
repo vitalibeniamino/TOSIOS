@@ -1,14 +1,14 @@
 import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
 import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
-import { Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
+import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
-import { TileType, generate } from '@halftheopposite/dungeon';
 import { Emitter } from 'pixi-particles';
 import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
 import { Viewport } from 'pixi-viewport';
 import { drawTiles } from './utils/tiles';
+import { generate } from '@halftheopposite/dungeon';
 
 // We don't want to scale textures linearly because they would appear blurry.
 settings.SCALE_MODE = SCALE_MODES.NEAREST;
@@ -284,9 +284,26 @@ export class GameState {
             //
             // Collisions: Walls
             //
-            const collidingWalls = this.map.collidesById(bullet.id, ['tiles'], [TileType.Wall]);
+            const collidingWalls = this.map.collidesById(bullet.id, ['tiles'], Collisions.BULLET_TILES);
             if (collidingWalls.length > 0) {
                 toDelete.push(bullet.id);
+
+                // Impact
+                this.spawnImpact(bullet.x, bullet.y);
+                continue;
+            }
+
+            //
+            // Collisions: Props
+            //
+            const collidingProps = this.map.collidesById(bullet.id, ['props'], Collisions.BULLET_PROPS);
+            if (collidingProps.length > 0) {
+                toDelete.push(bullet.id);
+
+                // Hurt props
+                collidingProps.forEach((prop) => {
+                    this.propsManager.get(prop.id)?.hurt();
+                });
 
                 // Impact
                 this.spawnImpact(bullet.x, bullet.y);
@@ -681,27 +698,27 @@ export class GameState {
     };
 
     private computePlayerCollisions = (player: Player): { x: number; y: number } => {
-        let { x, y } = player;
+        let item: Map.Item = {
+            x: player.x,
+            y: player.y,
+            w: player.width,
+            h: player.height,
+            type: player.type,
+            layer: 'players',
+            id: player.id,
+        };
 
         //
         // Collisions: Walls
         //
-        const corrected = this.map.collideAndCorrectByItem(
-            {
-                x: player.x,
-                y: player.y,
-                w: player.width,
-                h: player.height,
-                type: player.type,
-                layer: 'players',
-                id: player.id,
-            },
-            ['tiles'],
-        );
-        x = corrected.x;
-        y = corrected.y;
+        item = this.map.collideAndCorrectByItem(item, ['tiles'], Collisions.PLAYER_TILES);
 
-        return { x, y };
+        //
+        // Collisions: Props
+        //
+        item = this.map.collideAndCorrectByItem(item, ['props'], Collisions.PLAYER_PROPS);
+
+        return { x: item.x, y: item.y };
     };
 
     private runActionsSimulation = (

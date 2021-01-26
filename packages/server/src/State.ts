@@ -270,12 +270,21 @@ export class GameState extends Schema {
         this.map.updateItem(player.id, player.x, player.y);
 
         //
-        // Collisions: walls
+        // Collisions: Walls
         //
-        const collidingItems = this.map.collidesById(player.id, ['tiles']);
-        if (collidingItems.length > 0) {
-            const correctedItem = this.map.collideAndCorrectById(player.id, ['tiles']);
-            player.setPosition(correctedItem.x, correctedItem.y);
+        const collidingWalls = this.map.collidesById(player.id, ['tiles'], Collisions.PLAYER_TILES);
+        if (collidingWalls.length > 0) {
+            const corrected = this.map.collideAndCorrectById(player.id, ['tiles'], Collisions.PLAYER_TILES);
+            player.setPosition(corrected.x, corrected.y);
+        }
+
+        //
+        // Collisions: Props
+        //
+        const collidingProps = this.map.collidesById(player.id, ['props'], Collisions.PLAYER_PROPS);
+        if (collidingProps.length > 0) {
+            const corrected = this.map.collideAndCorrectById(player.id, ['props'], Collisions.PLAYER_PROPS);
+            player.setPosition(corrected.x, corrected.y);
         }
 
         // Acknowledge last treated action

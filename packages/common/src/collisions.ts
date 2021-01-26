@@ -6,6 +6,7 @@ export const BULLET_TILES: TileType[] = [TileType.Wall];
 export const BULLET_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood, PropType.Lamp, PropType.StonesLarge];
 export const PLAYER_TILES: TileType[] = [TileType.Wall, TileType.Hole];
 export const PLAYER_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood, PropType.Lamp, PropType.StonesLarge];
+export const HURTABLE_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood];
 
 /**
  * Return which side of the second Rectangle the first collides with

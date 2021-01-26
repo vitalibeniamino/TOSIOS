@@ -3,12 +3,12 @@ import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
 import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
+import { PropType, generate } from '@halftheopposite/dungeon';
 import { Emitter } from 'pixi-particles';
 import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
 import { Viewport } from 'pixi-viewport';
 import { drawTiles } from './utils/tiles';
-import { generate } from '@halftheopposite/dungeon';
 
 // We don't want to scale textures linearly because they would appear blurry.
 settings.SCALE_MODE = SCALE_MODES.NEAREST;
@@ -302,7 +302,9 @@ export class GameState {
 
                 // Hurt props
                 collidingProps.forEach((prop) => {
-                    this.propsManager.get(prop.id)?.hurt();
+                    if (Collisions.HURTABLE_PROPS.includes(prop.type as PropType)) {
+                        this.propsManager.get(prop.id)?.hurt();
+                    }
                 });
 
                 // Impact

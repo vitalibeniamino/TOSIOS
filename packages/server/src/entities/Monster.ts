@@ -100,9 +100,9 @@ export class Monster extends Circle {
         // Move monster
         this.move(Constants.MONSTER_SPEED_PATROL, this.rotation);
 
-        const collidingItems = map.collidesByLayer(this.id, 'tiles');
+        const collidingItems = map.collidesById(this.id, ['tiles']);
         if (collidingItems.length > 0) {
-            const correctedItem = map.correctByIdLayer(this.id, 'tiles');
+            const correctedItem = map.collideAndCorrectById(this.id, ['tiles']);
             this.x = correctedItem.x;
             this.y = correctedItem.y;
             this.startIdle();

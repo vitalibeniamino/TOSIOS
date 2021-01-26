@@ -1,7 +1,7 @@
 import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { Collisions, Constants, Geometry, Map, Maps, Models } from '@tosios/common';
 import { MapSchema, Schema, type } from '@colyseus/schema';
-import { MonsterType, PropType, generate } from '@halftheopposite/dungeon';
+import { MonsterType, PropType, TileType, generate } from '@halftheopposite/dungeon';
 import { nanoid } from 'nanoid';
 
 export interface GameStateArgs {
@@ -135,7 +135,7 @@ export class GameState extends Schema {
         });
 
         this.game.seed = seed;
-        this.map.loadDungeon(dungeon);
+        this.map.loadDungeon(dungeon, ['tiles', 'props', 'monsters']);
 
         // 2. Create monsters
         const monstersItems = this.map.listItemsByLayer('monsters');
@@ -272,9 +272,9 @@ export class GameState extends Schema {
         //
         // Collisions: walls
         //
-        const collidingItems = this.map.collidesByLayer(player.id, 'tiles');
+        const collidingItems = this.map.collidesById(player.id, ['tiles']);
         if (collidingItems.length > 0) {
-            const correctedItem = this.map.correctByIdLayer(player.id, 'tiles');
+            const correctedItem = this.map.collideAndCorrectById(player.id, ['tiles']);
             player.setPosition(correctedItem.x, correctedItem.y);
         }
 
@@ -408,7 +408,7 @@ export class GameState extends Schema {
         //
         // Collisions: Monsters
         //
-        const collidingMonsters = this.map.collidesByLayer(bullet.id, 'monsters');
+        const collidingMonsters = this.map.collidesById(bullet.id, ['monsters']);
         if (collidingMonsters.length > 0) {
             collidingMonsters.forEach((item) => {
                 const monster = this.monsters[item.id];
@@ -427,7 +427,7 @@ export class GameState extends Schema {
         //
         // Collisions: Walls
         //
-        const collidingWalls = this.map.collidesByLayer(bullet.id, 'tiles');
+        const collidingWalls = this.map.collidesById(bullet.id, ['tiles'], [TileType.Wall]);
         if (collidingWalls.length > 0) {
             this.bulletRemove(bulletId);
         }
@@ -447,7 +447,7 @@ export class GameState extends Schema {
     // Utils
     //
     private getLadderCoord(): { x: number; y: number } {
-        const ladders = this.map.listItemsByLayerAndTypes('props', PropType.Ladder);
+        const ladders = this.map.listItemsByLayerAndType('props', PropType.Ladder);
 
         if (ladders.length > 0) {
             return ladders[0];

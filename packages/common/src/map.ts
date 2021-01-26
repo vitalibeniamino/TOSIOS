@@ -75,7 +75,7 @@ export class DungeonMap {
 
         this.items = {};
         layers.forEach((layer) => {
-            if (layer in layers) {
+            if (layer in dungeon.layers) {
                 this.items = {
                     ...this.items,
                     ...tilemapToItems(dungeon.layers[layer], layer, this.tileSize),
@@ -108,6 +108,16 @@ export class DungeonMap {
         return item.id;
     };
 
+    /** Get an item by id. */
+    getItem = (id: string): Item => {
+        const item = this.items[id];
+        if (!item) {
+            throw new Error(`Couldn't find item with id "${id}"`);
+        }
+
+        return item;
+    };
+
     /** Update an item by id. */
     updateItem = (id: string, x: number, y: number): void => {
         if (!this.items[id]) {
@@ -130,7 +140,7 @@ export class DungeonMap {
     };
 
     /** List all items matching the `layer` and `type`. */
-    listItemsByLayerAndTypes = (layer: ItemLayer, type: ItemType): Item[] => {
+    listItemsByLayerAndType = (layer: ItemLayer, type: ItemType): Item[] => {
         return Object.values(this.items).filter((item) => item.layer === layer && item.type === type);
     };
 
@@ -138,83 +148,32 @@ export class DungeonMap {
     // Collisions
     //
 
-    /** List all items on `layer` that collide with `id`. */
-    collidesByLayer = (id: string, layer: ItemLayer): Item[] => {
-        return this.rbush.search(this.rbush.toBBox(this.items[id])).filter((item) => item.layer === layer);
+    /** List all items on `layer` with `type` that collide with `id`. */
+    collidesById = (id: string, layers: ItemLayer[], types?: number[]): Item[] => {
+        const item = this.getItem(id);
+        const bbox = this.rbush.toBBox(item);
+
+        return filterByLayerAndTypes(this.rbush.search(bbox), layers, types);
     };
 
-    /** Update the corrected position of an item. */
-    correctByIdLayer = (id: string, layer: ItemLayer): Item => {
-        const item = this.items[id];
-        if (!item) {
-            throw new Error(`Couldn't find item with id "${id}"`);
-        }
-
-        const collidingItems = this.collidesByLayer(id, layer);
-        if (collidingItems.length === 0) {
-            return this.items[id];
-        }
-
-        const updatedItem: Item = {
-            ...this.items[id],
-        };
-
-        collidingItems.forEach((collidingItem) => {
-            const side = rectangleToRectangleSide(updatedItem, collidingItem);
-            switch (side) {
-                case 'left':
-                    updatedItem.x = collidingItem.x - updatedItem.w;
-                    break;
-                case 'top':
-                    updatedItem.y = collidingItem.y - updatedItem.h;
-                    break;
-                case 'right':
-                    updatedItem.x = collidingItem.x + collidingItem.w;
-                    break;
-                case 'bottom':
-                    updatedItem.y = collidingItem.y + collidingItem.h;
-                    break;
-                default:
-                    break;
-            }
-        });
-
+    /** Collide and correct the position of an item by `id`. */
+    collideAndCorrectById = (id: string, layers: ItemLayer[], types?: number[]): Item => {
+        const item = this.getItem(id);
+        const updatedItem = this.collideAndCorrectByItem(item, layers, types);
         this.updateItem(id, updatedItem.x, updatedItem.y);
 
         return updatedItem;
     };
 
-    correctByItemAndLayer = (item: Item, layer: ItemLayer): Item => {
-        const collidingItems = this.rbush.search(this.rbush.toBBox(item)).filter((element) => element.layer === layer);
+    /** Collide and correct the position of a provided item. */
+    collideAndCorrectByItem = (item: Item, layers: ItemLayer[], types?: number[]): Item => {
+        const bbox = this.rbush.toBBox(item);
+        const collidingItems = filterByLayerAndTypes(this.rbush.search(bbox), layers, types);
         if (collidingItems.length === 0) {
             return item;
         }
 
-        const updatedItem: Item = {
-            ...item,
-        };
-
-        collidingItems.forEach((collidingItem) => {
-            const side = rectangleToRectangleSide(updatedItem, collidingItem);
-            switch (side) {
-                case 'left':
-                    updatedItem.x = collidingItem.x - updatedItem.w;
-                    break;
-                case 'top':
-                    updatedItem.y = collidingItem.y - updatedItem.h;
-                    break;
-                case 'right':
-                    updatedItem.x = collidingItem.x + collidingItem.w;
-                    break;
-                case 'bottom':
-                    updatedItem.y = collidingItem.y + collidingItem.h;
-                    break;
-                default:
-                    break;
-            }
-        });
-
-        return updatedItem;
+        return correctItem(item, collidingItems);
     };
 }
 
@@ -223,9 +182,53 @@ export class DungeonMap {
 //
 
 /**
+ * Correct an `item` against a list of `items`.
+ */
+function correctItem(initial: Item, items: Item[]): Item {
+    const updated = {
+        ...initial,
+    };
+
+    items.forEach((item) => {
+        const side = rectangleToRectangleSide(updated, item);
+        switch (side) {
+            case 'left':
+                updated.x = item.x - updated.w;
+                break;
+            case 'top':
+                updated.y = item.y - updated.h;
+                break;
+            case 'right':
+                updated.x = item.x + item.w;
+                break;
+            case 'bottom':
+                updated.y = item.y + item.h;
+                break;
+            default:
+                break;
+        }
+    });
+
+    return updated;
+}
+
+/**
+ * Filter a list of `item` by their `layers` and `types` (if any).
+ */
+function filterByLayerAndTypes(items: Item[], layers: ItemLayer[], types?: number[]): Item[] {
+    return items.filter((item) => {
+        if (types && types.length) {
+            return layers.includes(item.layer) && types.includes(item.type);
+        }
+
+        return layers.includes(item.layer);
+    });
+}
+
+/**
  * Computes which side `i1` is colliding `i2` on.
  */
-const rectangleToRectangleSide = (i1: Item, i2: Item) => {
+function rectangleToRectangleSide(i1: Item, i2: Item) {
     const dx = i1.x + i1.w / 2 - (i2.x + i2.w / 2);
     const dy = i1.y + i1.h / 2 - (i2.y + i2.h / 2);
     const width = (i1.w + i2.w) / 2;
@@ -242,7 +245,7 @@ const rectangleToRectangleSide = (i1: Item, i2: Item) => {
         }
     }
     return collision;
-};
+}
 
 /**
  * Create an item.

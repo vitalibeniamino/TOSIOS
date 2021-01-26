@@ -3,12 +3,12 @@ import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
 import { Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
+import { TileType, generate } from '@halftheopposite/dungeon';
 import { Emitter } from 'pixi-particles';
 import { GUITextures } from './assets/images';
 import { Inputs } from './utils/inputs';
 import { Viewport } from 'pixi-viewport';
 import { drawTiles } from './utils/tiles';
-import { generate } from '@halftheopposite/dungeon';
 
 // We don't want to scale textures linearly because they would appear blurry.
 settings.SCALE_MODE = SCALE_MODES.NEAREST;
@@ -267,7 +267,7 @@ export class GameState {
             //
             // Collisions: Monsters
             //
-            const collidingMonsters = this.map.collidesByLayer(bullet.id, 'monsters');
+            const collidingMonsters = this.map.collidesById(bullet.id, ['monsters']);
             if (collidingMonsters.length > 0) {
                 toDelete.push(bullet.id);
 
@@ -284,7 +284,7 @@ export class GameState {
             //
             // Collisions: Walls
             //
-            const collidingWalls = this.map.collidesByLayer(bullet.id, 'tiles');
+            const collidingWalls = this.map.collidesById(bullet.id, ['tiles'], [TileType.Wall]);
             if (collidingWalls.length > 0) {
                 toDelete.push(bullet.id);
 
@@ -686,7 +686,7 @@ export class GameState {
         //
         // Collisions: Walls
         //
-        const corrected = this.map.correctByItemAndLayer(
+        const corrected = this.map.collideAndCorrectByItem(
             {
                 x: player.x,
                 y: player.y,
@@ -696,7 +696,7 @@ export class GameState {
                 layer: 'players',
                 id: player.id,
             },
-            'tiles',
+            ['tiles'],
         );
         x = corrected.x;
         y = corrected.y;
@@ -719,7 +719,7 @@ export class GameState {
             );
 
             // Collide
-            const corrected = this.map.correctByItemAndLayer(
+            const corrected = this.map.collideAndCorrectByItem(
                 {
                     x: moved.x,
                     y: moved.y,
@@ -729,7 +729,7 @@ export class GameState {
                     layer: 'players',
                     id: 'none',
                 },
-                'tiles',
+                ['tiles'],
             );
 
             x = corrected.x;

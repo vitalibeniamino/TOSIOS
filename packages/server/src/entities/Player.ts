@@ -96,15 +96,6 @@ export class Player extends Circle {
     //
     // Setters
     //
-    setPosition(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-    }
-
-    setRotation(rotation: number) {
-        this.rotation = rotation;
-    }
-
     setLives(lives: number) {
         if (lives) {
             this.lives = lives;

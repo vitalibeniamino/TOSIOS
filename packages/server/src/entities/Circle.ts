@@ -37,6 +37,18 @@ export class Circle extends Entity {
     }
 
     //
+    // Methods
+    //
+    setPosition(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+
+    setRotation(rotation: number) {
+        this.rotation = rotation;
+    }
+
+    //
     // Getters
     //
     get body(): Geometry.CircleBody {

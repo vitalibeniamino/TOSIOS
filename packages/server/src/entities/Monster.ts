@@ -1,13 +1,15 @@
 import { Circle, ICircle } from './Circle';
-import { Constants, Map, Maths, Models } from '@tosios/common';
-import { MapSchema, type } from '@colyseus/schema';
+import { Constants, Geometry, Map, Maths, Models } from '@tosios/common';
 import { MonsterType } from '@halftheopposite/dungeon';
-import { Player } from '.';
+import { lineBox } from 'intersects';
+import { type } from '@colyseus/schema';
+
+const RANGE = Constants.TILE_SIZE * 4;
+const DELAY = 300; // ms
 
 export interface IMonster extends ICircle {
     type: MonsterType;
-    mapWidth: number;
-    mapHeight: number;
+    state: Models.MonsterState;
     lives: number;
 }
 
@@ -24,21 +26,13 @@ export class Monster extends Circle {
     //
     // Local fields
     //
-    private mapWidth: number;
-
-    private mapHeight: number;
+    private home: Geometry.Vector2;
 
     private lives: number = 0;
 
-    private lastActionAt: number = Date.now();
+    private lastActionAt: number = 0;
 
-    private lastAttackAt: number = Date.now();
-
-    private idleDuration: number = 0;
-
-    private patrolDuration: number = 0;
-
-    private targetPlayerId: string = null;
+    private targetedPlayerId: string;
 
     //
     // Lifecycle
@@ -47,97 +41,64 @@ export class Monster extends Circle {
         super(attributes);
 
         this.type = attributes.type;
-        this.state = 'idle';
-        this.mapWidth = attributes.mapWidth;
-        this.mapHeight = attributes.mapHeight;
+        this.state = attributes.state;
+        this.home = new Geometry.Vector2(attributes.x, attributes.y);
         this.lives = attributes.lives;
     }
 
     //
     // Update
     //
-    update(players: MapSchema<Player>, map: Map.DungeonMap) {
+    update(map: Map.DungeonMap) {
         switch (this.state) {
             case 'idle':
-                this.updateIdle(players);
-                break;
-            case 'patrol':
-                this.updatePatrol(players, map);
+                this.updateIdle(map);
                 break;
             case 'chase':
-                this.updateChase(players);
+                this.updateChase(map);
                 break;
             default:
                 break;
         }
     }
 
-    updateIdle(players: MapSchema<Player>) {
-        // // Look for a player to chase
-        // if (this.lookForPlayer(players)) {
-        //     return;
-        // }
-        // // Is state over?
-        // const delta = Date.now() - this.lastActionAt;
-        // if (delta > this.idleDuration) {
-        //     this.startPatrol();
-        // }
+    updateIdle(map: Map.DungeonMap) {
+        // Is the monster ready to check again?
+        if (!this.canAct()) {
+            return;
+        }
+
+        // Are there some players in range?
+        const inRange = getPlayersInRange(this, map);
+        if (inRange.length === 0) {
+            return;
+        }
+
+        // Are there some players in sight?
+        const inSight = getPlayersInSight(this, map, inRange);
+        if (inSight.length === 0) {
+            return;
+        }
+
+        this.startChase(inSight[0].id);
     }
 
-    updatePatrol(players: MapSchema<Player>, map: Map.DungeonMap) {
-        // Look for a player to chase
-        if (this.lookForPlayer(players)) {
-            return;
-        }
-
-        // Is state over?
-        const delta = Date.now() - this.lastActionAt;
-        if (delta > this.patrolDuration) {
+    updateChase(map: Map.DungeonMap) {
+        // Is the targeted player still in range?
+        if (!isPlayerInRange(this, map, this.targetedPlayerId)) {
+            // If not, we go back to idle state
             this.startIdle();
             return;
         }
 
-        // Move monster
-        this.move(Constants.MONSTER_SPEED_PATROL, this.rotation);
-
-        const collidingItems = map.collidesById(this.id, ['tiles']);
-        if (collidingItems.length > 0) {
-            const correctedItem = map.collideAndCorrectById(this.id, ['tiles']);
-            this.x = correctedItem.x;
-            this.y = correctedItem.y;
-            this.startIdle();
-        }
-
-        // Is the monster out of bounds?
-        if (
-            this.x < Constants.TILE_SIZE ||
-            this.x > this.mapWidth - Constants.TILE_SIZE ||
-            this.y < Constants.TILE_SIZE ||
-            this.y > this.mapHeight - Constants.TILE_SIZE
-        ) {
-            this.x = Maths.clamp(this.x, 0, this.mapWidth);
-            this.y = Maths.clamp(this.y, 0, this.mapHeight);
-            // this.rotation = Maths.getRandomInt(-3, 3);
-            this.startIdle();
-        }
-    }
-
-    updateChase(players: MapSchema<Player>) {
-        // Did player disconnect or die?
-        const player = getPlayerFromId(this.targetPlayerId, players);
-        if (!player || !player.isAlive) {
-            this.startIdle();
+        // Is the targeted player still in sight?
+        if (!isPlayerInSight(this, map, this.targetedPlayerId)) {
+            // If not, we try to find some crumbs that he left over
+            this.startIdle(); // TODO: Replace by isCrumbInSight();
             return;
         }
 
-        // Did player run away?
-        const distance = Maths.getDistance(this.x, this.y, player.x, player.y);
-        if (distance > Constants.MONSTER_SIGHT) {
-            this.startIdle();
-            return;
-        }
-
-        // Move toward player
+        const player = map.getItem(this.targetedPlayerId);
         this.rotation = Maths.calculateAngle(player.x, player.y, this.x, this.y);
         this.move(Constants.MONSTER_SPEED_CHASE, this.rotation);
     }
@@ -147,58 +108,34 @@ export class Monster extends Circle {
     //
     startIdle() {
         this.state = 'idle';
+        this.targetedPlayerId = null;
         this.rotation = 0;
-        this.targetPlayerId = null;
-        this.idleDuration = Maths.getRandomInt(
-            Constants.MONSTER_IDLE_DURATION_MIN,
-            Constants.MONSTER_IDLE_DURATION_MAX,
-        );
-        this.lastActionAt = Date.now();
-    }
-
-    startPatrol() {
-        this.state = 'patrol';
-        this.targetPlayerId = null;
-        this.patrolDuration = Maths.getRandomInt(
-            Constants.MONSTER_PATROL_DURATION_MIN,
-            Constants.MONSTER_PATROL_DURATION_MAX,
-        );
-        this.rotation = Maths.getRandomInt(-3, 3);
-        this.lastActionAt = Date.now();
     }
 
     startChase(playerId: string) {
         this.state = 'chase';
-        this.targetPlayerId = playerId;
-        this.lastActionAt = Date.now();
+        this.targetedPlayerId = playerId;
     }
 
     //
     // Methods
     //
-    lookForPlayer(players: MapSchema<Player>): boolean {
-        // if (!this.targetPlayerId) {
-        //     const playerId = getClosestPlayerId(this.x, this.y, players);
-        //     if (playerId) {
-        //         this.startChase(playerId);
-        //         return true;
-        //     }
-        // }
-
-        return false;
-    }
-
     hurt() {
         this.lives -= 1;
     }
 
     move(speed: number, rotation: number) {
-        this.x += Math.cos(rotation) * speed;
-        this.y += Math.sin(rotation) * speed;
+        this.x = Maths.round2Digits(this.x + Math.cos(rotation) * speed);
+        this.y = Maths.round2Digits(this.y + Math.sin(rotation) * speed);
     }
 
-    attack() {
-        this.lastAttackAt = Date.now();
+    canAct() {
+        if (Date.now() - this.lastActionAt < DELAY) {
+            return false;
+        }
+
+        this.lastActionAt = Date.now();
+        return true;
     }
 
     //
@@ -207,31 +144,73 @@ export class Monster extends Circle {
     get isAlive(): boolean {
         return this.lives > 0;
     }
-
-    get canAttack(): boolean {
-        const delta = Math.abs(this.lastAttackAt - Date.now());
-        return this.state === 'chase' && delta > Constants.MONSTER_ATTACK_BACKOFF;
-    }
 }
 
 //
 // Utils
 //
-function getPlayerFromId(id: string, players: MapSchema<Player>): Player | null {
-    return players.get(id);
-}
 
-function getClosestPlayerId(x: number, y: number, players: MapSchema<Player>): string | null {
-    let selectedPlayerId = null;
-
-    players.forEach((player, playerId) => {
-        if (player.isAlive) {
-            const distance = Maths.getDistance(x, y, player.x, player.y);
-            if (distance <= Constants.MONSTER_SIGHT) {
-                selectedPlayerId = playerId;
-            }
-        }
+/**
+ * Get the players in range.
+ */
+function getPlayersInRange(monster: Monster, map: Map.DungeonMap): Map.Item[] {
+    const rangeItem = createMonsterRangeItem(monster, map);
+    const players = map.collidesByItem(rangeItem, ['players']).sort((a, b) => {
+        return Maths.getDistance(monster.x, monster.y, a.x, a.y) - Maths.getDistance(monster.x, monster.y, b.x, b.y);
     });
 
-    return selectedPlayerId;
+    return players;
+}
+
+/**
+ * Get the ids of the players in range.
+ */
+function getPlayersInSight(monster: Monster, map: Map.DungeonMap, players: Map.Item[]): Map.Item[] {
+    const item = createMonsterRangeItem(monster, map);
+    const walls = map.collidesByItem(item, ['tiles']);
+
+    const inSightPlayers = players.filter((player) => {
+        const collidingWalls = walls.filter((wall) =>
+            lineBox(monster.x, monster.y, player.x, player.y, wall.x, wall.y, wall.w, wall.h),
+        );
+
+        return collidingWalls.length === 0;
+    });
+
+    return inSightPlayers;
+}
+
+/**
+ * Is the player in the monster's range?
+ */
+function isPlayerInRange(monster: Monster, map: Map.DungeonMap, playerId: string): boolean {
+    const players = map.collidesByItem(createMonsterRangeItem(monster, map), ['players']);
+    return players.some((player) => player.id === playerId);
+}
+
+/**
+ * Is the player in the monster's sight?
+ */
+function isPlayerInSight(monster: Monster, map: Map.DungeonMap, playerId: string): boolean {
+    const inRange = getPlayersInRange(monster, map);
+    const inSight = getPlayersInSight(monster, map, inRange);
+    return inSight.some((player) => player.id === playerId);
+}
+
+/**
+ * Create a dummy item with the dimensions of it's sighting range.
+ */
+function createMonsterRangeItem(monster: Monster, map: Map.DungeonMap): Map.Item {
+    const mapWidth = map.width * Constants.TILE_SIZE;
+    const mapHeight = map.height * Constants.TILE_SIZE;
+
+    return {
+        x: Maths.clamp(monster.x - RANGE, 0, mapWidth),
+        y: Maths.clamp(monster.y - RANGE, 0, mapHeight),
+        w: Maths.clamp(RANGE * 2, 0, mapWidth),
+        h: Maths.clamp(RANGE * 2, 0, mapHeight),
+        layer: 'monsters',
+        type: 0,
+        id: 'none',
+    };
 }

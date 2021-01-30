@@ -23,14 +23,14 @@ export class DungeonRBush extends RBush<Item> {
     //
     // Overrides
     //
-    toBBox = (tile: Item) => {
+    toBBox = (item: Item) => {
         return {
-            minX: tile.x,
-            minY: tile.y,
-            maxX: tile.x + tile.w,
-            maxY: tile.y + tile.h,
-            type: tile.type,
-            layer: tile.layer,
+            minX: item.x,
+            minY: item.y,
+            maxX: item.x + item.w,
+            maxY: item.y + item.h,
+            type: item.type,
+            layer: item.layer,
         };
     };
 
@@ -156,6 +156,15 @@ export class DungeonMap {
         return filterByLayerAndTypes(this.rbush.search(bbox), layers, types);
     };
 
+    /** List all items on `layer` with `type` that collide with the provided `item`. */
+    collidesByItem = (item: Item, layers: ItemLayer[], types?: number[]): Item[] => {
+        const bbox = this.rbush.toBBox(item);
+        const found = this.rbush.search(bbox);
+        const filtered = filterByLayerAndTypes(found, layers, types);
+
+        return filtered;
+    };
+
     /** Collide and correct the position of an item by `id`. */
     collideAndCorrectById = (id: string, layers: ItemLayer[], types?: number[]): Item => {
         const item = this.getItem(id);
@@ -165,7 +174,7 @@ export class DungeonMap {
         return updatedItem;
     };
 
-    /** Collide and correct the position of a provided item. */
+    /** Collide and correct the position of the provided `item`. */
     collideAndCorrectByItem = (item: Item, layers: ItemLayer[], types?: number[]): Item => {
         const bbox = this.rbush.toBBox(item);
         const collidingItems = filterByLayerAndTypes(this.rbush.search(bbox), layers, types);
@@ -217,7 +226,7 @@ function correctItem(initial: Item, items: Item[]): Item {
  */
 function filterByLayerAndTypes(items: Item[], layers: ItemLayer[], types?: number[]): Item[] {
     return items.filter((item) => {
-        if (types && types.length) {
+        if (types && types.length > 0) {
             return layers.includes(item.layer) && types.includes(item.type);
         }
 

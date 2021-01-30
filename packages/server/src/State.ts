@@ -62,7 +62,7 @@ export class GameState extends Schema {
     //
     // Updates
     //
-    update() {
+    update = () => {
         this.updateGame();
 
         if (this.game.state === 'game') {
@@ -71,13 +71,13 @@ export class GameState extends Schema {
             this.updateProps();
             this.updateBullets();
         }
-    }
+    };
 
-    private updateGame() {
+    private updateGame = () => {
         this.game.update(this.players);
-    }
+    };
 
-    private updatePlayers() {
+    private updatePlayers = () => {
         let action: Models.ActionJSON;
 
         while (this.actions.length > 0) {
@@ -97,25 +97,25 @@ export class GameState extends Schema {
                     break;
             }
         }
-    }
+    };
 
-    private updateMonsters() {
+    private updateMonsters = () => {
         this.monsters.forEach((monster, monsterId) => {
             this.monsterUpdate(monsterId);
         });
-    }
+    };
 
-    private updateProps() {
+    private updateProps = () => {
         this.props.forEach((prop, propId) => {
             this.propUpdate(propId);
         });
-    }
+    };
 
-    private updateBullets() {
+    private updateBullets = () => {
         this.bullets.forEach((bullet, bulletId) => {
             this.bulletUpdate(bulletId);
         });
-    }
+    };
 
     //
     // Game
@@ -129,6 +129,7 @@ export class GameState extends Schema {
 
         // 1. Create dungeon
         const seed = nanoid();
+        // TODO: This can fail, retry if so.
         const dungeon = generate({
             ...Maps.DEFAULT_DUNGEON,
             seed,
@@ -147,8 +148,7 @@ export class GameState extends Schema {
                 radius: item.w / 2,
                 rotation: 0,
                 type: item.type as MonsterType,
-                mapWidth: this.map.width * Constants.TILE_SIZE,
-                mapHeight: this.map.height * Constants.TILE_SIZE,
+                state: 'idle',
                 lives: Constants.MONSTER_LIVES,
             });
 
@@ -276,6 +276,7 @@ export class GameState extends Schema {
         if (collidingWalls.length > 0) {
             const corrected = this.map.collideAndCorrectById(player.id, ['tiles'], Collisions.PLAYER_TILES);
             player.setPosition(corrected.x, corrected.y);
+            this.map.updateItem(player.id, player.x, player.y);
         }
 
         //
@@ -285,6 +286,7 @@ export class GameState extends Schema {
         if (collidingProps.length > 0) {
             const corrected = this.map.collideAndCorrectById(player.id, ['props'], Collisions.PLAYER_PROPS);
             player.setPosition(corrected.x, corrected.y);
+            this.map.updateItem(player.id, player.x, player.y);
         }
 
         // Acknowledge last treated action
@@ -323,7 +325,7 @@ export class GameState extends Schema {
             Constants.BULLET_SIZE * 2,
             Constants.BULLET_SIZE * 2,
             'projectiles',
-            1,
+            Models.BulletType.Magic,
         );
         const bullet = new Bullet({
             id: bulletId,
@@ -348,31 +350,8 @@ export class GameState extends Schema {
         }
 
         // Update monster
-        monster.update(this.players, this.map);
+        monster.update(this.map);
         this.map.updateItem(monster.id, monster.x, monster.y);
-
-        // Collisions: Players
-        this.players.forEach((player) => {
-            // Check if the monster can hurt the player
-            if (!player.isAlive || !monster.canAttack || !Collisions.circleToCircle(monster.body, player.body)) {
-                return;
-            }
-
-            monster.attack();
-            player.hurt();
-
-            if (!player.isAlive) {
-                this.onMessage({
-                    type: 'killed',
-                    from: 'server',
-                    ts: Date.now(),
-                    params: {
-                        killerName: 'A bat',
-                        killedName: player.name,
-                    },
-                });
-            }
-        });
     };
 
     private monsterRemove = (monsterId: string) => {
@@ -413,6 +392,14 @@ export class GameState extends Schema {
 
         bullet.move(Constants.BULLET_SPEED);
         this.map.updateItem(bulletId, bullet.x, bullet.y);
+
+        //
+        // Collisions: Out of map
+        //
+        if (this.isOutOfMap(bullet.x, bullet.y)) {
+            this.bulletRemove(bulletId);
+            return;
+        }
 
         //
         // Collisions: Monsters
@@ -484,6 +471,10 @@ export class GameState extends Schema {
         }
 
         return { x: 0, y: 0 };
+    }
+
+    private isOutOfMap(x: number, y: number): boolean {
+        return x < 0 || y < 0 || x > this.map.width * Constants.TILE_SIZE || y > this.map.height * Constants.TILE_SIZE;
     }
 
     private setPlayersActive(active: boolean) {

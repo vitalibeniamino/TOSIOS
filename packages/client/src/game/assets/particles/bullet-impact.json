@@ -9,8 +9,8 @@
 		"minimumScaleMultiplier": 1
 	},
 	"color": {
-		"start": "#ffffff",
-		"end": "#ffffff"
+		"start": "#FF4500",
+		"end": "#FFA500"
 	},
 	"speed": {
 		"start": 100,

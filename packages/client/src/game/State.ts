@@ -2,10 +2,9 @@ import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
 import { Bullet, Game, Monster, Player, Prop } from './entities';
 import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
 import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
-import { ImpactConfig, ImpactTexture } from './assets/particles';
 import { PropType, generate } from '@halftheopposite/dungeon';
-import { Emitter } from 'pixi-particles';
 import { GUITextures } from './assets/images';
+import { ImpactsManager } from './managers/ImpactManager';
 import { Inputs } from './utils/inputs';
 import { Viewport } from 'pixi-viewport';
 import { drawTiles } from './utils/tiles';
@@ -24,6 +23,7 @@ const ZINDEXES = {
     ME: 5,
     MONSTERS: 6,
     BULLETS: 7,
+    IMPACTS: 8,
 };
 
 // TODO: These two constants should be calculated automatically.
@@ -76,6 +76,8 @@ export class GameState {
     private propsManager: PropsManager;
 
     private bulletsManager: BulletsManager;
+
+    private impactsManager: ImpactsManager;
 
     private onActionSend: (action: Models.ActionJSON) => void;
 
@@ -153,6 +155,11 @@ export class GameState {
         this.bulletsManager = new BulletsManager();
         this.bulletsManager.zIndex = ZINDEXES.BULLETS;
         this.viewport.addChild(this.bulletsManager);
+
+        // Bullets
+        this.impactsManager = new ImpactsManager();
+        this.impactsManager.zIndex = ZINDEXES.IMPACTS;
+        this.viewport.addChild(this.impactsManager);
 
         // Callbacks
         this.onActionSend = attributes.onActionSend;
@@ -272,12 +279,12 @@ export class GameState {
                 toDelete.push(bullet.id);
 
                 // Hurt monsters
-                collidingMonsters.forEach((monster) => {
-                    this.monstersManager.get(monster.id)?.hurt();
+                collidingMonsters.forEach((item) => {
+                    this.monstersManager.get(item.id)?.hurt();
                 });
 
                 // Impact
-                this.spawnImpact(bullet.x, bullet.y);
+                this.impactsManager.spawnBulletImpact(bullet);
                 continue;
             }
 
@@ -289,7 +296,7 @@ export class GameState {
                 toDelete.push(bullet.id);
 
                 // Impact
-                this.spawnImpact(bullet.x, bullet.y);
+                this.impactsManager.spawnBulletImpact(bullet);
                 continue;
             }
 
@@ -301,14 +308,18 @@ export class GameState {
                 toDelete.push(bullet.id);
 
                 // Hurt props
-                collidingProps.forEach((prop) => {
-                    if (Collisions.HURTABLE_PROPS.includes(prop.type as PropType)) {
-                        this.propsManager.get(prop.id)?.hurt();
+                collidingProps.forEach((item) => {
+                    if (Collisions.HURTABLE_PROPS.includes(item.type as PropType)) {
+                        const prop = this.propsManager.get(item.id);
+                        if (prop) {
+                            prop.hurt();
+                            this.impactsManager.spawnPropImpact(prop);
+                        }
                     }
                 });
 
                 // Impact
-                this.spawnImpact(bullet.x, bullet.y);
+                this.impactsManager.spawnBulletImpact(bullet);
                 continue;
             }
 
@@ -606,6 +617,11 @@ export class GameState {
     };
 
     monsterRemove = (monsterId: string) => {
+        const monster = this.monstersManager.get(monsterId);
+        if (!monster) {
+            return;
+        }
+
         this.monstersManager.remove(monsterId);
 
         // Map
@@ -637,6 +653,11 @@ export class GameState {
     };
 
     propRemove = (propId: string) => {
+        const prop = this.propsManager.get(propId);
+        if (!prop) {
+            return;
+        }
+
         this.propsManager.remove(propId);
 
         // Map
@@ -685,20 +706,6 @@ export class GameState {
     //
     // Utils
     //
-    private spawnImpact = (x: number, y: number) => {
-        new Emitter(this.playersManager, [ImpactTexture], {
-            ...ImpactConfig,
-            color: {
-                start: '#ffffff',
-                end: '#ffffff',
-            },
-            pos: {
-                x,
-                y,
-            },
-        }).playOnceAndDestroy();
-    };
-
     private computePlayerCollisions = (player: Player): { x: number; y: number } => {
         let item: Map.Item = {
             x: player.x,

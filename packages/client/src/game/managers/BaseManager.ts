@@ -2,14 +2,11 @@ import { Circle } from '../entities/Circle';
 import { Container } from 'pixi.js';
 
 export class BaseManager<T extends Circle> extends Container {
-    protected container: Container;
-
     protected entities: { [key: string]: T };
 
     constructor(name: string) {
         super();
-        this.container = new Container();
-        this.container.name = name;
+        this.name = name;
         this.entities = {};
     }
 

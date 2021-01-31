@@ -59,6 +59,24 @@ export class Circle extends Entity {
     }
 
     //
+    // Methods
+    //
+    playAnimation = (textures: Texture[]) => {
+        const currentTextures = this.sprite.textures;
+
+        this.sprite.stop();
+        this.sprite.textures = textures;
+        this.sprite.loop = false;
+        this.sprite.onComplete = () => {
+            this.sprite.stop();
+            this.sprite.textures = currentTextures;
+            this.sprite.loop = true;
+            this.sprite.play();
+        };
+        this.sprite.play();
+    };
+
+    //
     // Setters
     //
     set visible(visible: boolean) {

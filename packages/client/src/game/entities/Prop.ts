@@ -31,7 +31,8 @@ export class Prop extends Circle {
             y: prop.y,
             radius: prop.radius,
             rotation: prop.rotation,
-            textures: [PropTextures.sprites[prop.type]],
+            // @ts-ignore
+            textures: PropTextures.sprites[prop.type][getDefaultAnimation(prop.type)],
             zIndex: ZINDEXES.PROP,
         });
 
@@ -48,6 +49,9 @@ export class Prop extends Circle {
     //
     hurt() {
         Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
+
+        // @ts-ignore
+        this.playAnimation(PropTextures.sprites[this.type].anim);
     }
 
     setPosition(x: number, y: number) {
@@ -72,5 +76,22 @@ export class Prop extends Circle {
 
     get active() {
         return this._active;
+    }
+}
+
+function getDefaultAnimation(type: PropType): 'idle' | 'anim' {
+    switch (type) {
+        case PropType.Flag:
+        case PropType.HealthLarge:
+        case PropType.HealthSmall:
+        case PropType.KeyGold:
+        case PropType.KeySilver:
+        case PropType.Lamp:
+        case PropType.ManaLarge:
+        case PropType.ManaSmall:
+        case PropType.Torch:
+            return 'anim';
+        default:
+            return 'idle';
     }
 }

@@ -265,10 +265,6 @@ export class GameState {
         const toDelete: string[] = [];
 
         for (const bullet of this.bulletsManager.getAll()) {
-            if (!bullet.active) {
-                continue;
-            }
-
             bullet.move(Constants.BULLET_SPEED);
 
             //
@@ -441,7 +437,6 @@ export class GameState {
                 y: bulletY,
                 radius: Constants.BULLET_SIZE,
                 rotation: this.me.rotation,
-                active: true,
                 fromX: bulletX,
                 fromY: bulletY,
                 playerId: this.me.id,
@@ -535,7 +530,6 @@ export class GameState {
         // Update the player normally (or the current player's ghost)
         player.lives = attributes.lives;
         player.maxLives = attributes.maxLives;
-        player.kills = attributes.kills;
         player.rotation = attributes.rotation;
         player.setPosition(player.toX, player.toY);
         player.setToPosition(attributes.x, attributes.y);
@@ -544,7 +538,6 @@ export class GameState {
         if (isMe && this.me) {
             this.me.lives = attributes.lives;
             this.me.maxLives = attributes.maxLives;
-            this.me.kills = attributes.kills;
 
             if (this.me.ack !== attributes.ack && attributes.ack === 0) {
                 this.me.setPosition(attributes.x, attributes.y);
@@ -645,7 +638,6 @@ export class GameState {
             return;
         }
 
-        prop.active = attributes.active;
         prop.setPosition(attributes.x, attributes.y);
 
         // Map
@@ -786,7 +778,6 @@ export class GameState {
             name: player.name,
             lives: player.lives,
             maxLives: player.maxLives,
-            kills: player.kills,
         }));
 
         return {

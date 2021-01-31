@@ -7,6 +7,12 @@ export const BULLET_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWoo
 export const PLAYER_TILES: TileType[] = [TileType.Wall, TileType.Hole];
 export const PLAYER_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood, PropType.Lamp, PropType.StonesLarge];
 export const HURTABLE_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood];
+export const PICKABLE_PROPS: PropType[] = [
+    PropType.HealthLarge,
+    PropType.HealthSmall,
+    PropType.ManaLarge,
+    PropType.ManaSmall,
+];
 
 /**
  * Return which side of the second Rectangle the first collides with

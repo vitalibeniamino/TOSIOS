@@ -26,9 +26,6 @@ export class Player extends Circle {
     public maxLives: number;
 
     @type('number')
-    public kills: number;
-
-    @type('number')
     public ack: number;
 
     //
@@ -43,9 +40,8 @@ export class Player extends Circle {
         super(attributes);
         this.type = attributes.type;
         this.name = validateName(attributes.name);
-        this.lives = attributes.lives;
+        this.lives = attributes.lives - 2;
         this.maxLives = attributes.maxLives;
-        this.kills = 0;
         this.ack = undefined;
         this.lastShootAt = undefined;
     }
@@ -96,21 +92,8 @@ export class Player extends Circle {
     //
     // Setters
     //
-    setLives(lives: number) {
-        if (lives) {
-            this.lives = lives;
-            this.kills = 0;
-        } else {
-            this.lives = 0;
-        }
-    }
-
     setName(name: string) {
         this.name = validateName(name);
-    }
-
-    setKills(kills: number) {
-        this.kills = kills;
     }
 }
 

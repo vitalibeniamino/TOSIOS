@@ -165,6 +165,7 @@ export class GameState extends Schema {
                 radius: item.w / 2,
                 rotation: 0,
                 type: item.type as PropType,
+                lives: Collisions.HURTABLE_PROPS.includes(item.type as PropType) ? Constants.PROP_LIVES : undefined,
             });
 
             this.props.set(item.id, prop);
@@ -174,15 +175,7 @@ export class GameState extends Schema {
         const ladder = this.getLadderCoord();
         this.players.forEach((player) => {
             player.setPosition(ladder.x, ladder.y);
-            this.map.addItem(
-                player.x,
-                player.y,
-                player.radius * 2,
-                player.radius * 2,
-                'players',
-                player.type,
-                player.id,
-            );
+            this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
         });
     };
 
@@ -226,7 +219,7 @@ export class GameState extends Schema {
             name: name || playerId,
         });
         this.players.set(playerId, player);
-        this.map.addItem(player.x, player.y, player.radius * 2, player.radius * 2, 'players', player.type, player.id);
+        this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
 
         // Broadcast message to other players
         this.onMessage({
@@ -240,6 +233,7 @@ export class GameState extends Schema {
     }
 
     playerRemove(playerId: string) {
+        // Broadcast message to other players
         this.onMessage({
             type: 'left',
             from: 'server',
@@ -287,6 +281,20 @@ export class GameState extends Schema {
             const corrected = this.map.collideAndCorrectById(player.id, ['props'], Collisions.PLAYER_PROPS);
             player.setPosition(corrected.x, corrected.y);
             this.map.updateItem(player.id, player.x, player.y);
+        }
+
+        //
+        // Collisions: Pickables
+        //
+        const pickableProps = this.map.collidesById(player.id, ['props'], Collisions.PICKABLE_PROPS);
+        if (pickableProps.length > 0) {
+            const toRemove = [];
+            pickableProps.forEach((item) => {
+                player.heal();
+                toRemove.push(item.id);
+            });
+
+            toRemove.forEach((propId) => this.map.removeItem(propId));
         }
 
         // Acknowledge last treated action
@@ -386,7 +394,7 @@ export class GameState extends Schema {
     //
     private bulletUpdate = (bulletId: string) => {
         const bullet = this.bullets[bulletId];
-        if (!bullet || !bullet.active) {
+        if (!bullet) {
             return;
         }
 
@@ -480,7 +488,7 @@ export class GameState extends Schema {
     private setPlayersActive(active: boolean) {
         this.players.forEach((player) => {
             player.ack = active ? 0 : player.ack;
-            player.setLives(active ? player.maxLives : 0);
+            player.lives = active ? player.maxLives : 0;
         });
     }
 }

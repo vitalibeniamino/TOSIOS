@@ -61,18 +61,16 @@ export class Circle extends Entity {
     //
     // Methods
     //
-    playAnimation = (textures: Texture[]) => {
-        const currentTextures = this.sprite.textures;
-
+    playAnimation = (anim: Texture[], idle: Texture[]) => {
         this.sprite.stop();
-        this.sprite.textures = textures;
         this.sprite.loop = false;
+        this.sprite.textures = anim;
         this.sprite.onComplete = () => {
-            this.sprite.stop();
-            this.sprite.textures = currentTextures;
+            this.sprite.textures = idle;
             this.sprite.loop = true;
             this.sprite.play();
         };
+
         this.sprite.play();
     };
 

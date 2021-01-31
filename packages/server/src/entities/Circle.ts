@@ -54,4 +54,12 @@ export class Circle extends Entity {
     get body(): Geometry.CircleBody {
         return new Geometry.CircleBody(this.x, this.y, this.radius);
     }
+
+    get width(): number {
+        return this.radius * 2;
+    }
+
+    get height(): number {
+        return this.radius * 2;
+    }
 }

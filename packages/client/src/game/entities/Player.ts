@@ -35,8 +35,6 @@ export class Player extends Circle {
 
     private _maxLives: number = 0;
 
-    private _kills: number = 0;
-
     private _rotation: number = 0;
 
     //
@@ -126,7 +124,6 @@ export class Player extends Circle {
         this.name = player.name;
         this.lives = player.lives;
         this.maxLives = player.maxLives;
-        this.kills = player.kills;
         this.isGhost = isGhost;
 
         // Ghost
@@ -289,14 +286,6 @@ export class Player extends Circle {
         this.updateTextures();
     }
 
-    set kills(kills: number) {
-        if (this._kills === kills) {
-            return;
-        }
-
-        this._kills = kills;
-    }
-
     set rotation(rotation: number) {
         this._direction = getDirection(rotation);
 
@@ -357,10 +346,6 @@ export class Player extends Circle {
 
     get maxLives() {
         return this._maxLives;
-    }
-
-    get kills() {
-        return this._kills;
     }
 
     get rotation() {

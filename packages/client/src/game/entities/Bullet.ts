@@ -20,8 +20,6 @@ export class Bullet extends Circle {
     //
     // Local fields
     //
-    private _active: boolean = false;
-
     private _shotAt: number = 0;
 
     private _trailEmitter: Emitter;
@@ -49,7 +47,6 @@ export class Bullet extends Circle {
         // Bullet
         this.rotation = bullet.rotation;
         this.playerId = bullet.playerId;
-        this.active = bullet.active;
         this.shotAt = bullet.shotAt;
 
         // Sort rendering order
@@ -69,7 +66,6 @@ export class Bullet extends Circle {
         this.y = bullet.y;
         this.rotation = bullet.rotation;
         this.playerId = bullet.playerId;
-        this.active = bullet.active;
         this.shotAt = bullet.shotAt;
         this._trailEmitter.cleanup();
         this.updateTrail();
@@ -85,16 +81,11 @@ export class Bullet extends Circle {
     updateTrail = () => {
         this._trailEmitter.updateSpawnPos(this.x, this.y);
 
-        if (this.active) {
-            this._trailEmitter.emit = true;
-            this.container.rotation = this.rotation;
-        } else {
-            this._trailEmitter.emit = false;
-        }
+        this._trailEmitter.emit = true;
+        this.container.rotation = this.rotation;
     };
 
     kill = () => {
-        this.active = false;
         this._trailEmitter.destroy();
     };
 
@@ -107,13 +98,6 @@ export class Bullet extends Circle {
 
     set playerId(playerId: string) {
         this._playerId = playerId;
-    }
-
-    set active(active: boolean) {
-        this._active = active;
-        this.sprite.visible = active;
-
-        this.updateTrail();
     }
 
     set shotAt(shotAt: number) {
@@ -129,10 +113,6 @@ export class Bullet extends Circle {
 
     get playerId() {
         return this._playerId;
-    }
-
-    get active() {
-        return this._active;
     }
 
     get shotAt() {

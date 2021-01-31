@@ -17,11 +17,6 @@ export class Prop extends Circle {
     private _type: PropType;
 
     //
-    // Local fields
-    //
-    private _active: boolean = false;
-
-    //
     // Lifecycle
     //
     constructor(prop: Models.PropJSON) {
@@ -41,7 +36,6 @@ export class Prop extends Circle {
 
         // Prop
         this._type = prop.type;
-        this.active = prop.active;
     }
 
     //
@@ -51,7 +45,7 @@ export class Prop extends Circle {
         Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
 
         // @ts-ignore
-        this.playAnimation(PropTextures.sprites[this.type].anim);
+        this.playAnimation(PropTextures.sprites[this.type].anim, PropTextures.sprites[this.type].idle);
     }
 
     setPosition(x: number, y: number) {
@@ -60,22 +54,10 @@ export class Prop extends Circle {
     }
 
     //
-    // Setters
-    //
-    set active(active: boolean) {
-        this._active = active;
-        this.visible = active;
-    }
-
-    //
     // Getters
     //
     get type() {
         return this._type;
-    }
-
-    get active() {
-        return this._active;
     }
 }
 

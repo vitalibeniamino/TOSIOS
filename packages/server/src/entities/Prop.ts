@@ -1,13 +1,11 @@
 import { Circle } from '.';
-import { Collisions } from '@tosios/common';
 import { ICircle } from './Circle';
 import { PropType } from '@halftheopposite/dungeon';
 import { type } from '@colyseus/schema';
 
-const PROP_LIVES = 3;
-
-export interface IMonster extends ICircle {
+export interface IProp extends ICircle {
     type: PropType;
+    lives?: number;
 }
 
 export class Prop extends Circle {
@@ -17,9 +15,6 @@ export class Prop extends Circle {
     @type('number')
     public type: PropType;
 
-    @type('boolean')
-    public active: boolean;
-
     //
     // Local fields
     //
@@ -28,12 +23,11 @@ export class Prop extends Circle {
     //
     // Lifecycle
     //
-    constructor(attributes: IMonster) {
+    constructor(attributes: IProp) {
         super(attributes);
 
         this.type = attributes.type;
-        this.active = true;
-        this.lives = Collisions.HURTABLE_PROPS.includes(attributes.type) ? PROP_LIVES : undefined;
+        this.lives = attributes.lives;
     }
 
     //

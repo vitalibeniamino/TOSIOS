@@ -25,9 +25,6 @@ export class Bullet extends Circle {
     @type('number')
     public fromY: number;
 
-    @type('boolean')
-    public active: boolean;
-
     @type('number')
     public shotAt: number;
 
@@ -40,7 +37,6 @@ export class Bullet extends Circle {
         this.playerId = attributes.playerId;
         this.fromX = attributes.x;
         this.fromY = attributes.y;
-        this.active = true;
         this.shotAt = attributes.shotAt;
     }
 
@@ -61,7 +57,6 @@ export class Bullet extends Circle {
         this.playerId = attributes.playerId;
         this.fromX = attributes.x;
         this.fromY = attributes.y;
-        this.active = true;
         this.shotAt = attributes.shotAt;
     }
 }

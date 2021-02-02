@@ -276,7 +276,11 @@ export class GameState {
 
                 // Hurt monsters
                 collidingMonsters.forEach((item) => {
-                    this.monstersManager.get(item.id)?.hurt();
+                    const monster = this.monstersManager.get(item.id);
+                    if (monster) {
+                        monster.hurt();
+                        this.impactsManager.spawnMonsterImpact(monster);
+                    }
                 });
 
                 // Impact
@@ -639,6 +643,7 @@ export class GameState {
         }
 
         prop.setPosition(attributes.x, attributes.y);
+        prop.setActivated(attributes.activatedAt);
 
         // Map
         this.map.updateItem(propId, prop.x, prop.y);

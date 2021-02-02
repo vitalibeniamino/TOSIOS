@@ -1,9 +1,10 @@
 import { SCALE_MODES, Texture, settings } from 'pixi.js';
 import BubbleConfig from './bubble.json';
 import BulletImpactConfig from './bullet-impact.json';
+import MonsterImpactConfig from './monster-impact.json';
+import PropImpactConfig from './prop-impact.json';
 import SmokeConfig from './smoke.json';
 import TrailConfig from './trail.json';
-import WoodExplosionConfig from './wood-explosion.json';
 import bubbleImage from './bubble.png';
 import impactImage from './impact.png';
 import smokeImage from './smoke.png';
@@ -32,5 +33,6 @@ export {
     Trail25Texture,
     Trail50Texture,
     Trail100Texture,
-    WoodExplosionConfig,
+    MonsterImpactConfig,
+    PropImpactConfig,
 };

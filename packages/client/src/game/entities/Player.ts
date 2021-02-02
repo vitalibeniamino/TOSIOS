@@ -189,22 +189,6 @@ export class Player extends Circle {
         return true;
     }
 
-    canBulletHurt(otherPlayerId: string): boolean {
-        if (!this.isAlive) {
-            return false;
-        }
-
-        if (this.isGhost) {
-            return false;
-        }
-
-        if (this.id === otherPlayerId) {
-            return false;
-        }
-
-        return true;
-    }
-
     spawnSmoke() {
         if (!this._particlesContainer) {
             return;

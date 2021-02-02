@@ -16,6 +16,8 @@ export class Prop extends Circle {
     //
     private _type: PropType;
 
+    private _activatedAt?: number;
+
     //
     // Lifecycle
     //
@@ -51,6 +53,26 @@ export class Prop extends Circle {
     setPosition(x: number, y: number) {
         this.x = x;
         this.y = y;
+    }
+
+    setActivated(activatedAt?: number) {
+        if (this._activatedAt !== activatedAt) {
+            this._activatedAt = activatedAt;
+
+            if (activatedAt) {
+                const playIn = activatedAt - Date.now();
+
+                // Don't play animation if it's already passed
+                if (playIn < 0) {
+                    return;
+                }
+
+                setTimeout(() => {
+                    // @ts-ignore
+                    this.playAnimation(PropTextures.sprites[this.type].anim, PropTextures.sprites[this.type].idle);
+                }, playIn);
+            }
+        }
     }
 
     //

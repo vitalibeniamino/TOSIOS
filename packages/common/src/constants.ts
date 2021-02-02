@@ -28,6 +28,7 @@ export const TILE_SIZE = 32;
 export const PLAYER_SIZE = 24;
 export const PLAYER_SPEED = 3;
 export const PLAYER_MAX_LIVES = 5;
+export const PLAYER_HURT_BACKOFF = 1000; // Time for which the user is invincible when hurt
 export const PLAYER_WEAPON_SIZE = 12; // The bigger, the further away a bullet will be shot from.
 
 // Monsters
@@ -37,6 +38,8 @@ export const MONSTER_LIVES = 3;
 
 // Props
 export const PROP_LIVES = 3;
+export const PROP_TRAP_START_DELAY = 800;
+export const PROP_TRAP_HURT_DURATION = 500;
 
 // Bullets
 export const BULLET_SIZE = 8;

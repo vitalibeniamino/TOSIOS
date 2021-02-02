@@ -13,6 +13,7 @@ export const PICKABLE_PROPS: PropType[] = [
     PropType.ManaLarge,
     PropType.ManaSmall,
 ];
+export const TRAP_PROPS: PropType[] = [PropType.Peak];
 
 /**
  * Return which side of the second Rectangle the first collides with

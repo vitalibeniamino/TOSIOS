@@ -66,6 +66,7 @@ export class GameState extends Schema {
         this.updateGame();
 
         if (this.game.state === 'game') {
+            this.updateActions();
             this.updatePlayers();
             this.updateMonsters();
             this.updateProps();
@@ -77,7 +78,7 @@ export class GameState extends Schema {
         this.game.update(this.players);
     };
 
-    private updatePlayers = () => {
+    private updateActions = () => {
         let action: Models.ActionJSON;
 
         while (this.actions.length > 0) {
@@ -97,6 +98,12 @@ export class GameState extends Schema {
                     break;
             }
         }
+    };
+
+    private updatePlayers = () => {
+        this.players.forEach((player, playerId) => {
+            this.playerUpdate(playerId);
+        });
     };
 
     private updateMonsters = () => {
@@ -205,7 +212,7 @@ export class GameState extends Schema {
     //
     // Players
     //
-    playerAdd(playerId: string, name: string) {
+    playerAdd = (playerId: string, name: string) => {
         const ladder = this.getLadderCoord();
         const player = new Player({
             type: Models.PlayerType.Wizard,
@@ -230,9 +237,55 @@ export class GameState extends Schema {
                 name: this.players.get(playerId).name,
             },
         });
-    }
+    };
 
-    playerRemove(playerId: string) {
+    playerUpdate = (playerId: string) => {
+        const player = this.players.get(playerId);
+        if (!player || !player.isAlive) {
+            return;
+        }
+
+        //
+        // Collisions: Traps
+        //
+        const trapsProps = this.map.collidesById(player.id, ['props'], Collisions.TRAP_PROPS);
+        if (trapsProps.length > 0) {
+            trapsProps.forEach((item) => {
+                const prop = this.props.get(item.id);
+                if (!prop) {
+                    return;
+                }
+
+                // Trigger
+                if (prop.canActivate()) {
+                    prop.activate();
+                }
+
+                // Hurt
+                if (prop.canHurt() && player.canBeHurt()) {
+                    player.hurt();
+                }
+            });
+        }
+
+        //
+        // Collisions: Pickables
+        //
+        const pickableProps = this.map.collidesById(player.id, ['props'], Collisions.PICKABLE_PROPS);
+        if (pickableProps.length > 0) {
+            const toRemove = [];
+            pickableProps.forEach((item) => {
+                player.heal();
+                toRemove.push(item.id);
+            });
+
+            toRemove.forEach((propId) => {
+                this.propRemove(propId);
+            });
+        }
+    };
+
+    playerRemove = (playerId: string) => {
         // Broadcast message to other players
         this.onMessage({
             type: 'left',
@@ -245,16 +298,16 @@ export class GameState extends Schema {
 
         this.map.removeItem(playerId);
         this.players.delete(playerId);
-    }
+    };
 
     //
-    // Players: Actions
+    // Actions
     //
-    playerPushAction(action: Models.ActionJSON) {
+    playerPushAction = (action: Models.ActionJSON) => {
         this.actions.push(action);
-    }
+    };
 
-    private playerMove(playerId: string, ts: number, dir: Geometry.Vector2) {
+    private playerMove = (playerId: string, ts: number, dir: Geometry.Vector2) => {
         const player = this.players.get(playerId);
         if (!player || dir.empty) {
             return;
@@ -283,34 +336,20 @@ export class GameState extends Schema {
             this.map.updateItem(player.id, player.x, player.y);
         }
 
-        //
-        // Collisions: Pickables
-        //
-        const pickableProps = this.map.collidesById(player.id, ['props'], Collisions.PICKABLE_PROPS);
-        if (pickableProps.length > 0) {
-            const toRemove = [];
-            pickableProps.forEach((item) => {
-                player.heal();
-                toRemove.push(item.id);
-            });
-
-            toRemove.forEach((propId) => this.map.removeItem(propId));
-        }
-
         // Acknowledge last treated action
         player.ack = ts;
-    }
+    };
 
-    private playerRotate(playerId: string, ts: number, rotation: number) {
+    private playerRotate = (playerId: string, ts: number, rotation: number) => {
         const player = this.players.get(playerId);
         if (!player) {
             return;
         }
 
         player.setRotation(rotation);
-    }
+    };
 
-    private playerShoot(playerId: string, ts: number, angle: number) {
+    private playerShoot = (playerId: string, ts: number, angle: number) => {
         const player = this.players.get(playerId);
         if (!player || !player.isAlive || this.game.state !== 'game') {
             return;
@@ -346,7 +385,7 @@ export class GameState extends Schema {
             shotAt: Date.now(),
         });
         this.bullets.set(bulletId, bullet);
-    }
+    };
 
     //
     // Monsters
@@ -416,11 +455,13 @@ export class GameState extends Schema {
         if (collidingMonsters.length > 0) {
             collidingMonsters.forEach((item) => {
                 const monster = this.monsters[item.id];
-                if (monster) {
-                    monster.hurt();
-                    if (!monster.isAlive) {
-                        this.monsterRemove(monster.id);
-                    }
+                if (!monster) {
+                    return;
+                }
+
+                monster.hurt();
+                if (!monster.isAlive) {
+                    this.monsterRemove(monster.id);
                 }
             });
 
@@ -443,14 +484,17 @@ export class GameState extends Schema {
         const collidingProps = this.map.collidesById(bullet.id, ['props'], Collisions.BULLET_PROPS);
         if (collidingProps.length > 0) {
             collidingProps.forEach((item) => {
-                if (Collisions.HURTABLE_PROPS.includes(item.type as PropType)) {
-                    const prop = this.props[item.id];
-                    if (prop) {
-                        prop.hurt();
-                        if (!prop.isAlive) {
-                            this.propRemove(prop.id);
-                        }
-                    }
+                if (!Collisions.HURTABLE_PROPS.includes(item.type as PropType)) {
+                    return;
+                }
+                const prop = this.props[item.id];
+                if (!prop) {
+                    return;
+                }
+
+                prop.hurt();
+                if (!prop.isAlive) {
+                    this.propRemove(prop.id);
                 }
             });
 

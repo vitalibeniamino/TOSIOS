@@ -1,5 +1,5 @@
 import { Circle, ICircle } from './Circle';
-import { Models } from '@tosios/common';
+import { Constants, Models } from '@tosios/common';
 import { type } from '@colyseus/schema';
 
 export interface IPlayer extends ICircle {
@@ -33,6 +33,8 @@ export class Player extends Circle {
     //
     public lastShootAt: number;
 
+    public lastHurtAt: number;
+
     //
     // Lifecycle
     //
@@ -40,10 +42,11 @@ export class Player extends Circle {
         super(attributes);
         this.type = attributes.type;
         this.name = validateName(attributes.name);
-        this.lives = attributes.lives - 2;
+        this.lives = attributes.lives;
         this.maxLives = attributes.maxLives;
         this.ack = undefined;
         this.lastShootAt = undefined;
+        this.lastHurtAt = undefined;
     }
 
     //
@@ -60,22 +63,15 @@ export class Player extends Circle {
 
     hurt() {
         this.lives -= 1;
+        this.lastHurtAt = Date.now();
     }
 
     heal() {
         this.lives += 1;
     }
 
-    canBulletHurt(otherPlayerId: string): boolean {
-        if (!this.isAlive) {
-            return false;
-        }
-
-        if (this.id === otherPlayerId) {
-            return false;
-        }
-
-        return true;
+    canBeHurt(): boolean {
+        return !this.lastHurtAt || Date.now() > this.lastHurtAt + Constants.PLAYER_HURT_BACKOFF;
     }
 
     //

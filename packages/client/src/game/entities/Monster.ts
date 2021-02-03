@@ -76,21 +76,13 @@ export class Monster extends Circle {
     }
 
     setToPosition(toX: number, toY: number) {
-        this.toX = toX;
-        this.toY = toY;
+        this._toX = toX;
+        this._toY = toY;
     }
 
     //
     // Setters
     //
-    set toX(toX: number) {
-        this._toX = toX;
-    }
-
-    set toY(toY: number) {
-        this._toY = toY;
-    }
-
     set rotation(rotation: number) {
         this._direction = getDirection(rotation);
         switch (this._direction) {

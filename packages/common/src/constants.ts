@@ -40,6 +40,8 @@ export const MONSTER_LIVES = 3;
 export const PROP_LIVES = 3;
 export const PROP_TRAP_START_DELAY = 800;
 export const PROP_TRAP_HURT_DURATION = 500;
+export const PROP_DROP_RADIUS = 64;
+export const PROP_COIN_SIZE = 16;
 
 // Bullets
 export const BULLET_SIZE = 8;

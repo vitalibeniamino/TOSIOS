@@ -1,5 +1,5 @@
 import { Bullet, Game, Monster, Player, Prop } from './entities';
-import { Collisions, Constants, Geometry, Map, Maps, Models } from '@tosios/common';
+import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { MonsterType, PropType, TileType, generate } from '@halftheopposite/dungeon';
 import { nanoid } from 'nanoid';
@@ -416,6 +416,22 @@ export class GameState extends Schema {
     //
     private propUpdate = (propId: string) => {
         const prop = this.props.get(propId);
+        if (!prop.toX || !prop.toY) {
+            return;
+        }
+
+        const distance = Maths.getDistance(prop.x, prop.y, prop.toX, prop.toY);
+        if (distance === 0) {
+            return;
+        }
+
+        if (distance > 0.1) {
+            prop.setPosition(Maths.lerp(prop.x, prop.toX, 0.3), Maths.lerp(prop.y, prop.toY, 0.3));
+        } else {
+            prop.setPosition(prop.toX, prop.toY);
+        }
+
+        this.map.updateItem(propId, prop.x, prop.y);
     };
 
     private propRemove = (propId: string) => {
@@ -461,6 +477,7 @@ export class GameState extends Schema {
 
                 monster.hurt();
                 if (!monster.isAlive) {
+                    this.spawnCoins(monster.x, monster.y);
                     this.monsterRemove(monster.id);
                 }
             });
@@ -534,5 +551,31 @@ export class GameState extends Schema {
             player.ack = active ? 0 : player.ack;
             player.lives = active ? player.maxLives : 0;
         });
+    }
+
+    private spawnCoins(fromX: number, fromY: number) {
+        const coinsCount = Maths.getRandomInt(0, 3);
+        for (let i = 0; i < coinsCount; i++) {
+            const { x, y } = Maths.randomPointInDisk(fromX, fromY, Constants.PROP_DROP_RADIUS);
+            const propId = this.map.addItem(
+                fromX,
+                fromY,
+                Constants.PROP_COIN_SIZE,
+                Constants.PROP_COIN_SIZE,
+                'props',
+                PropType.Coin,
+            );
+            const prop = new Prop({
+                id: propId,
+                x: fromX,
+                y: fromY,
+                rotation: 0,
+                radius: Constants.PROP_COIN_SIZE / 2,
+                type: PropType.Coin,
+                toX: Math.floor(x),
+                toY: Math.floor(y),
+            });
+            this.props.set(propId, prop);
+        }
     }
 }

@@ -1,12 +1,14 @@
 import { Circle } from '.';
+import { Constants } from '@tosios/common';
 import { ICircle } from './Circle';
 import { PropType } from '@halftheopposite/dungeon';
 import { type } from '@colyseus/schema';
-import { Constants } from '@tosios/common';
 
 export interface IProp extends ICircle {
     type: PropType;
     lives?: number;
+    toX?: number;
+    toY?: number;
 }
 
 export class Prop extends Circle {
@@ -24,6 +26,10 @@ export class Prop extends Circle {
     //
     private lives?: number;
 
+    public toX?: number;
+
+    public toY?: number;
+
     //
     // Lifecycle
     //
@@ -32,6 +38,8 @@ export class Prop extends Circle {
 
         this.type = attributes.type;
         this.lives = attributes.lives;
+        this.toX = attributes.toX;
+        this.toY = attributes.toY;
     }
 
     //

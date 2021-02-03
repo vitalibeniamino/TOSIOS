@@ -125,3 +125,14 @@ export function rad2Deg(radians: number) {
 export function normalize(value: number, min: number, max: number) {
     return (value - min) / (max - min);
 }
+
+/**
+ * Get a random point in a disk
+ */
+export function randomPointInDisk(centerX: number, centerY: number, radius: number) {
+    const r = radius * Math.sqrt(Math.random());
+    const theta = Math.random() * 2 * Math.PI;
+    const x = centerX + r * Math.cos(theta);
+    const y = centerY + r * Math.sin(theta);
+    return { x, y };
+}

@@ -8,6 +8,7 @@ export const PLAYER_TILES: TileType[] = [TileType.Wall, TileType.Hole];
 export const PLAYER_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood, PropType.Lamp, PropType.StonesLarge];
 export const HURTABLE_PROPS: PropType[] = [PropType.CrateSilver, PropType.CrateWood];
 export const PICKABLE_PROPS: PropType[] = [
+    PropType.Coin,
     PropType.HealthLarge,
     PropType.HealthSmall,
     PropType.ManaLarge,

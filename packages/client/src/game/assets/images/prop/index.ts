@@ -1,4 +1,5 @@
 import { SCALE_MODES, Texture, settings } from 'pixi.js';
+import { Coin } from './coin';
 import { CrateSilver } from './crate-silver';
 import { CrateWood } from './crate-wood';
 import { Flag } from './flag';
@@ -29,43 +30,38 @@ settings.SCALE_MODE = SCALE_MODES.NEAREST;
 settings.ROUND_PIXELS = true;
 
 export const textures: { [key: string]: Texture } = {
-    // Decor
     bone: Texture.from(bone),
     'handcuff-1': Texture.from(handcuff1),
     'handcuff-2': Texture.from(handcuff2),
+    ladder: Texture.from(ladder),
     skull: Texture.from(skull),
     'stones-large': Texture.from(stonesLarge),
     'stones-small': Texture.from(stonesSmall),
     'web-left': Texture.from(webLeft),
     'web-right': Texture.from(webRight),
-    // Spawns
-    ladder: Texture.from(ladder),
 };
 
 export const sprites: PropTextures = {
-    // Traps
-    [`${PropType.Peak}`]: Peaks,
-    // Decor
     [`${PropType.Bone}`]: { idle: [textures.bone] },
-    [`${PropType.Flag}`]: Flag,
+    [`${PropType.Coin}`]: Coin,
     [`${PropType.CrateSilver}`]: CrateSilver,
     [`${PropType.CrateWood}`]: CrateWood,
+    [`${PropType.Flag}`]: Flag,
     [`${PropType.Handcuff1}`]: { idle: [textures['handcuff-1']] },
     [`${PropType.Handcuff2}`]: { idle: [textures['handcuff-2']] },
+    [`${PropType.HealthLarge}`]: HealthLarge,
+    [`${PropType.HealthSmall}`]: HealthSmall,
+    [`${PropType.KeyGold}`]: KeyGold,
+    [`${PropType.KeySilver}`]: KeySilver,
+    [`${PropType.Ladder}`]: { idle: [textures.ladder] },
     [`${PropType.Lamp}`]: Lamp,
+    [`${PropType.ManaLarge}`]: ManaLarge,
+    [`${PropType.ManaSmall}`]: ManaSmall,
+    [`${PropType.Peak}`]: Peaks,
     [`${PropType.Skull}`]: { idle: [textures.skull] },
     [`${PropType.StonesLarge}`]: { idle: [textures['stones-large']] },
     [`${PropType.StonesSmall}`]: { idle: [textures['stones-small']] },
     [`${PropType.Torch}`]: Torch,
     [`${PropType.WebLeft}`]: { idle: [textures['web-left']] },
     [`${PropType.WebRight}`]: { idle: [textures['web-right']] },
-    // Items
-    [`${PropType.HealthLarge}`]: HealthLarge,
-    [`${PropType.HealthSmall}`]: HealthSmall,
-    [`${PropType.KeyGold}`]: KeyGold,
-    [`${PropType.KeySilver}`]: KeySilver,
-    [`${PropType.ManaLarge}`]: ManaLarge,
-    [`${PropType.ManaSmall}`]: ManaSmall,
-    // Spawns
-    [`${PropType.Ladder}`]: { idle: [textures.ladder] },
 };

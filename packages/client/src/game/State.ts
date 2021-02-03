@@ -186,6 +186,7 @@ export class GameState {
             this.updateInputs();
             this.updatePlayers();
             this.updateMonsters();
+            this.updateProps();
             this.updateBullets();
         }
     };
@@ -234,6 +235,10 @@ export class GameState {
             }
 
             distance = Maths.getDistance(player.x, player.y, player.toX, player.toY);
+            if (distance === 0) {
+                return;
+            }
+
             if (distance > MAX_DISTANCE) {
                 player.setPosition(
                     Maths.lerp(player.x, player.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
@@ -252,11 +257,37 @@ export class GameState {
 
         for (const monster of this.monstersManager.getAll()) {
             distance = Maths.getDistance(monster.x, monster.y, monster.toX, monster.toY);
+            if (distance === 0) {
+                return;
+            }
+
             if (distance > MAX_DISTANCE) {
                 monster.setPosition(
                     Maths.lerp(monster.x, monster.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
                     Maths.lerp(monster.y, monster.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
                 );
+            } else {
+                monster.setPosition(monster.toX, monster.toY);
+            }
+        }
+    };
+
+    private updateProps = () => {
+        let distance;
+
+        for (const prop of this.propsManager.getAll()) {
+            distance = Maths.getDistance(prop.x, prop.y, prop.toX, prop.toY);
+            if (distance === 0) {
+                return;
+            }
+
+            if (distance > MAX_DISTANCE) {
+                prop.setPosition(
+                    Maths.lerp(prop.x, prop.toX, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
+                    Maths.lerp(prop.y, prop.toY, TOREMOVE_MAX_FPS_MS / TOREMOVE_AVG_LAG),
+                );
+            } else {
+                prop.setPosition(prop.toX, prop.toY);
             }
         }
     };
@@ -642,7 +673,8 @@ export class GameState {
             return;
         }
 
-        prop.setPosition(attributes.x, attributes.y);
+        prop.setPosition(prop.toX, prop.toY);
+        prop.setToPosition(attributes.x, attributes.y);
         prop.setActivated(attributes.activatedAt);
 
         // Map

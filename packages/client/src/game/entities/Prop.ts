@@ -19,6 +19,13 @@ export class Prop extends Circle {
     private _activatedAt?: number;
 
     //
+    // Local fields
+    //
+    private _toX: number = 0;
+
+    private _toY: number = 0;
+
+    //
     // Lifecycle
     //
     constructor(prop: Models.PropJSON) {
@@ -38,6 +45,9 @@ export class Prop extends Circle {
 
         // Prop
         this._type = prop.type;
+        this._activatedAt = prop.activatedAt;
+        this._toX = prop.x;
+        this._toY = prop.y;
     }
 
     //
@@ -53,6 +63,11 @@ export class Prop extends Circle {
     setPosition(x: number, y: number) {
         this.x = x;
         this.y = y;
+    }
+
+    setToPosition(toX: number, toY: number) {
+        this._toX = toX;
+        this._toY = toY;
     }
 
     setActivated(activatedAt?: number) {
@@ -81,10 +96,23 @@ export class Prop extends Circle {
     get type() {
         return this._type;
     }
+
+    get activatedAt() {
+        return this._activatedAt;
+    }
+
+    get toX() {
+        return this._toX;
+    }
+
+    get toY() {
+        return this._toY;
+    }
 }
 
 function getDefaultAnimation(type: PropType): 'idle' | 'anim' {
     switch (type) {
+        case PropType.Coin:
         case PropType.Flag:
         case PropType.HealthLarge:
         case PropType.HealthSmall:

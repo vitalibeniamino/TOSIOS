@@ -555,8 +555,29 @@ export class GameState extends Schema {
 
     private spawnCoins(fromX: number, fromY: number) {
         const coinsCount = Maths.getRandomInt(0, 3);
+
+        const pointInDisk = () => {
+            const coords = Maths.randomPointInDisk(fromX, fromY, Constants.PROP_DROP_RADIUS);
+            const item: Map.Item = {
+                id: '',
+                x: coords.x,
+                y: coords.y,
+                w: Constants.PROP_COIN_SIZE,
+                h: Constants.PROP_COIN_SIZE,
+                layer: 'props',
+                type: PropType.Coin,
+            };
+
+            const collides = this.map.collidesByItem(item, ['tiles', 'props']);
+            if (collides.length > 0) {
+                return pointInDisk();
+            }
+
+            return coords;
+        };
+
         for (let i = 0; i < coinsCount; i++) {
-            const { x, y } = Maths.randomPointInDisk(fromX, fromY, Constants.PROP_DROP_RADIUS);
+            const { x, y } = pointInDisk();
             const propId = this.map.addItem(
                 fromX,
                 fromY,

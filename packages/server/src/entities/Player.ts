@@ -62,16 +62,24 @@ export class Player extends Circle {
     }
 
     hurt() {
+        if (this.lives === 0) {
+            return;
+        }
+
         this.lives -= 1;
         this.lastHurtAt = Date.now();
     }
 
     heal() {
+        if (this.lives === this.maxLives) {
+            return;
+        }
+
         this.lives += 1;
     }
 
     canBeHurt(): boolean {
-        return !this.lastHurtAt || Date.now() > this.lastHurtAt + Constants.PLAYER_HURT_BACKOFF;
+        return !this.lastHurtAt || this.lastHurtAt + Constants.PLAYER_HURT_BACKOFF < Date.now();
     }
 
     //

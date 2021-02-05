@@ -1,8 +1,8 @@
 import { Trail100Texture, Trail25Texture, Trail50Texture, TrailConfig } from '../assets/particles';
 import { Circle } from './Circle';
-import { Container } from 'pixi.js';
 import { Emitter } from 'pixi-particles';
 import { Models } from '@tosios/common';
+import { ParticlesManager } from '../managers/ParticlesManager';
 import { WeaponTextures } from '../assets/images';
 
 const ZINDEXES = {
@@ -27,7 +27,7 @@ export class Bullet extends Circle {
     //
     // Lifecycle
     //
-    constructor(bullet: Models.BulletJSON, particlesContainer: Container) {
+    constructor(bullet: Models.BulletJSON, particlesContainer: ParticlesManager) {
         super({
             id: bullet.id,
             x: bullet.x,

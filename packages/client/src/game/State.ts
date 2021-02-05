@@ -4,8 +4,8 @@ import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from '.
 import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { PropType, generate } from '@halftheopposite/dungeon';
 import { GUITextures } from './assets/images';
-import { ImpactsManager } from './managers/ImpactManager';
 import { Inputs } from './utils/inputs';
+import { ParticlesManager } from './managers/ParticlesManager';
 import { Viewport } from 'pixi-viewport';
 import { drawTiles } from './utils/tiles';
 
@@ -23,7 +23,6 @@ const ZINDEXES = {
     ME: 5,
     MONSTERS: 6,
     BULLETS: 7,
-    IMPACTS: 8,
 };
 
 // TODO: These two constants should be calculated automatically.
@@ -67,8 +66,6 @@ export class GameState {
 
     private tilesContainer: Container;
 
-    private particlesContainer: Container;
-
     private playersManager: PlayersManager;
 
     private monstersManager: MonstersManager;
@@ -77,7 +74,7 @@ export class GameState {
 
     private bulletsManager: BulletsManager;
 
-    private impactsManager: ImpactsManager;
+    private particlesManager: ParticlesManager;
 
     private onActionSend: (action: Models.ActionJSON) => void;
 
@@ -132,9 +129,9 @@ export class GameState {
         this.viewport.addChild(this.tilesContainer);
 
         // Particles
-        this.particlesContainer = new Container();
-        this.particlesContainer.zIndex = ZINDEXES.PARTICLES;
-        this.viewport.addChild(this.particlesContainer);
+        this.particlesManager = new ParticlesManager();
+        this.particlesManager.zIndex = ZINDEXES.PARTICLES;
+        this.viewport.addChild(this.particlesManager);
 
         // Players
         this.playersManager = new PlayersManager();
@@ -155,11 +152,6 @@ export class GameState {
         this.bulletsManager = new BulletsManager();
         this.bulletsManager.zIndex = ZINDEXES.BULLETS;
         this.viewport.addChild(this.bulletsManager);
-
-        // Bullets
-        this.impactsManager = new ImpactsManager();
-        this.impactsManager.zIndex = ZINDEXES.IMPACTS;
-        this.viewport.addChild(this.impactsManager);
 
         // Callbacks
         this.onActionSend = attributes.onActionSend;
@@ -310,12 +302,12 @@ export class GameState {
                     const monster = this.monstersManager.get(item.id);
                     if (monster) {
                         monster.hurt();
-                        this.impactsManager.spawnMonsterImpact(monster);
+                        this.particlesManager.spawnMonsterImpact(monster);
                     }
                 });
 
                 // Impact
-                this.impactsManager.spawnBulletImpact(bullet);
+                this.particlesManager.spawnBulletImpact(bullet);
                 continue;
             }
 
@@ -327,7 +319,7 @@ export class GameState {
                 toDelete.push(bullet.id);
 
                 // Impact
-                this.impactsManager.spawnBulletImpact(bullet);
+                this.particlesManager.spawnBulletImpact(bullet);
                 continue;
             }
 
@@ -344,13 +336,13 @@ export class GameState {
                         const prop = this.propsManager.get(item.id);
                         if (prop) {
                             prop.hurt();
-                            this.impactsManager.spawnPropImpact(prop);
+                            this.particlesManager.spawnPropImpact(prop);
                         }
                     }
                 });
 
                 // Impact
-                this.impactsManager.spawnBulletImpact(bullet);
+                this.particlesManager.spawnBulletImpact(bullet);
                 continue;
             }
 
@@ -478,7 +470,7 @@ export class GameState {
                 type: Models.BulletType.Magic,
                 shotAt: this.me.lastShootAt,
             },
-            this.particlesContainer,
+            this.particlesManager,
         );
         this.bulletsManager.add(bullet.id, bullet);
         this.map.addItem(bullet.x, bullet.y, bullet.width, bullet.height, 'projectiles', bullet.type, bullet.id);
@@ -543,12 +535,12 @@ export class GameState {
     // Players
     //
     playerAdd = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
-        const player = new Player(attributes, isMe, this.particlesContainer);
+        const player = new Player(attributes, isMe, this.particlesManager);
         this.playersManager.add(playerId, player);
         this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
 
         if (isMe) {
-            this.me = new Player(attributes, false, this.particlesContainer);
+            this.me = new Player(attributes, false, this.particlesManager);
             this.playersManager.add(ME_ID, this.me);
             this.viewport.follow(this.me.container);
 
@@ -702,7 +694,7 @@ export class GameState {
             return;
         }
 
-        const bullet = new Bullet(attributes, this.particlesContainer);
+        const bullet = new Bullet(attributes, this.particlesManager);
         this.bulletsManager.add(bulletId, bullet);
 
         // Map

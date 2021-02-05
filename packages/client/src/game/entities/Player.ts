@@ -1,10 +1,9 @@
 import { Constants, Models } from '@tosios/common';
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { Effects, PlayerLivesSprite, TextSprite } from '../sprites';
+import { Graphics, Sprite, Texture } from 'pixi.js';
 import { PlayerTextures, WeaponTextures } from '../assets/images';
-import { SmokeConfig, SmokeTexture } from '../assets/particles';
 import { Circle } from '.';
-import { Emitter } from 'pixi-particles';
+import { ParticlesManager } from '../managers/ParticlesManager';
 
 const NAME_OFFSET = 4;
 const LIVES_OFFSET = 10;
@@ -60,14 +59,14 @@ export class Player extends Circle {
 
     private _shadow: Graphics;
 
-    private _particlesContainer?: Container;
+    private _particlesManager: ParticlesManager;
 
     private _lastSmokeAt: number = 0;
 
     //
     // Lifecycle
     //
-    constructor(player: Models.PlayerJSON, isGhost: boolean, particlesContainer?: Container) {
+    constructor(player: Models.PlayerJSON, isGhost: boolean, particlesManager: ParticlesManager) {
         super({
             id: player.id,
             x: player.x,
@@ -114,7 +113,7 @@ export class Player extends Circle {
         this.container.sortChildren();
 
         // Reference to the particles container
-        this._particlesContainer = particlesContainer;
+        this._particlesManager = particlesManager;
 
         // Player
         this.type = player.type;
@@ -190,10 +189,6 @@ export class Player extends Circle {
     }
 
     spawnSmoke() {
-        if (!this._particlesContainer) {
-            return;
-        }
-
         if (!this.isAlive) {
             return;
         }
@@ -202,16 +197,8 @@ export class Player extends Circle {
         if (timeSinceLastSmoke < SMOKE_DELAY) {
             return;
         }
-
-        new Emitter(this._particlesContainer, [SmokeTexture], {
-            ...SmokeConfig,
-            pos: {
-                x: this.body.x,
-                y: this.body.y + this.body.radius / 2,
-            },
-        }).playOnceAndDestroy();
-
         this._lastSmokeAt = Date.now();
+        this._particlesManager.spawnPlayerSmoke(this);
     }
 
     setPosition(x: number, y: number, smoke: boolean = false) {
@@ -253,6 +240,8 @@ export class Player extends Circle {
 
         if (lives > this._lives) {
             this.heal();
+        } else {
+            this.hurt();
         }
 
         this._lives = lives;

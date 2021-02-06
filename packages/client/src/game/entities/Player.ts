@@ -144,10 +144,12 @@ export class Player extends Circle {
 
     hurt() {
         Effects.flash(this.sprite, HURT_COLOR, 0xffffff);
+        this._particlesManager.spawn('hurt', this);
     }
 
     heal() {
         Effects.flash(this.sprite, HEAL_COLOR, 0xffffff);
+        this._particlesManager.spawn('heal', this);
     }
 
     updateTextures() {
@@ -198,7 +200,7 @@ export class Player extends Circle {
             return;
         }
         this._lastSmokeAt = Date.now();
-        this._particlesManager.spawnPlayerSmoke(this);
+        this._particlesManager.spawn('smoke', this);
     }
 
     setPosition(x: number, y: number, smoke: boolean = false) {

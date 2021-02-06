@@ -302,12 +302,12 @@ export class GameState {
                     const monster = this.monstersManager.get(item.id);
                     if (monster) {
                         monster.hurt();
-                        this.particlesManager.spawnMonsterImpact(monster);
+                        this.particlesManager.spawn('hurt', monster);
                     }
                 });
 
                 // Impact
-                this.particlesManager.spawnBulletImpact(bullet);
+                this.particlesManager.spawn('bullet', bullet);
                 continue;
             }
 
@@ -319,7 +319,7 @@ export class GameState {
                 toDelete.push(bullet.id);
 
                 // Impact
-                this.particlesManager.spawnBulletImpact(bullet);
+                this.particlesManager.spawn('bullet', bullet);
                 continue;
             }
 
@@ -336,13 +336,13 @@ export class GameState {
                         const prop = this.propsManager.get(item.id);
                         if (prop) {
                             prop.hurt();
-                            this.particlesManager.spawnPropImpact(prop);
+                            this.particlesManager.spawn('prop', prop);
                         }
                     }
                 });
 
                 // Impact
-                this.particlesManager.spawnBulletImpact(bullet);
+                this.particlesManager.spawn('bullet', bullet);
                 continue;
             }
 

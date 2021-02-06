@@ -7,6 +7,7 @@ export interface IPlayer extends ICircle {
     name: string;
     lives: number;
     maxLives: number;
+    money: number;
 }
 
 export class Player extends Circle {
@@ -24,6 +25,9 @@ export class Player extends Circle {
 
     @type('number')
     public maxLives: number;
+
+    @type('number')
+    public money: number;
 
     @type('number')
     public ack: number;
@@ -44,6 +48,7 @@ export class Player extends Circle {
         this.name = validateName(attributes.name);
         this.lives = attributes.lives;
         this.maxLives = attributes.maxLives;
+        this.money = attributes.money;
         this.ack = undefined;
         this.lastShootAt = undefined;
         this.lastHurtAt = undefined;
@@ -71,15 +76,19 @@ export class Player extends Circle {
     }
 
     heal() {
-        if (this.lives === this.maxLives) {
-            return;
-        }
-
         this.lives += 1;
+    }
+
+    pay() {
+        this.money += 1;
     }
 
     canBeHurt(): boolean {
         return !this.lastHurtAt || this.lastHurtAt + Constants.PLAYER_HURT_BACKOFF < Date.now();
+    }
+
+    canBeHeal(): boolean {
+        return this.lives < this.maxLives;
     }
 
     //
@@ -87,10 +96,6 @@ export class Player extends Circle {
     //
     get isAlive(): boolean {
         return this.lives > 0;
-    }
-
-    get isFullLives(): boolean {
-        return this.lives === this.maxLives;
     }
 
     //

@@ -14,6 +14,8 @@ export const PICKABLE_PROPS: PropType[] = [
     PropType.ManaLarge,
     PropType.ManaSmall,
 ];
+export const HEALABLE_PROPS: PropType[] = [PropType.HealthLarge, PropType.HealthSmall];
+export const MONEY_PROPS: PropType[] = [PropType.Coin];
 export const TRAP_PROPS: PropType[] = [PropType.Peak];
 
 /**

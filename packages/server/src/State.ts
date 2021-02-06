@@ -215,15 +215,16 @@ export class GameState extends Schema {
     playerAdd = (playerId: string, name: string) => {
         const ladder = this.getLadderCoord();
         const player = new Player({
-            type: Models.PlayerType.Wizard,
             id: playerId,
             x: ladder.x,
             y: ladder.y,
             radius: Constants.PLAYER_SIZE / 2,
             rotation: 0,
+            type: Models.PlayerType.Wizard,
+            name: name || playerId,
             lives: 0,
             maxLives: Constants.PLAYER_MAX_LIVES,
-            name: name || playerId,
+            money: 0,
         });
         this.players.set(playerId, player);
         this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
@@ -275,8 +276,17 @@ export class GameState extends Schema {
         if (pickableProps.length > 0) {
             const toRemove = [];
             pickableProps.forEach((item) => {
-                player.heal();
-                toRemove.push(item.id);
+                // Health
+                if (player.canBeHeal() && Collisions.HEALABLE_PROPS.includes(item.type as PropType)) {
+                    player.heal();
+                    toRemove.push(item.id);
+                }
+
+                // Money
+                if (Collisions.MONEY_PROPS.includes(item.type as PropType)) {
+                    player.pay();
+                    toRemove.push(item.id);
+                }
             });
 
             toRemove.forEach((propId) => {
@@ -547,10 +557,17 @@ export class GameState extends Schema {
     }
 
     private setPlayersActive(active: boolean) {
-        this.players.forEach((player) => {
-            player.ack = active ? 0 : player.ack;
-            player.lives = active ? player.maxLives : 0;
-        });
+        if (active) {
+            this.players.forEach((player) => {
+                player.lives = player.maxLives;
+                player.money = 0;
+                player.ack = 0;
+            });
+        } else {
+            this.players.forEach((player) => {
+                player.lives = 0;
+            });
+        }
     }
 
     private spawnCoins(fromX: number, fromY: number) {

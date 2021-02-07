@@ -13,6 +13,7 @@ interface IProps extends RouteComponentProps {
 }
 
 interface IState {
+    meId: string;
     hud: HUDProps;
 }
 
@@ -41,17 +42,10 @@ export default class Match extends Component<IProps, IState> {
         });
 
         this.state = {
+            meId: '',
             hud: {
-                state: 'lobby',
-                stateEndsAt: 0,
-                roomName: '',
-                playerId: '',
-                playerName: '',
-                playerLives: 0,
-                playerMaxLives: 0,
+                game: undefined,
                 players: [],
-                playersCount: 0,
-                playersMaxCount: 0,
                 messages: [],
                 announce: '',
             },
@@ -111,10 +105,7 @@ export default class Match extends Component<IProps, IState> {
         // Set the current player id
         this.setState((prev) => ({
             ...prev,
-            hud: {
-                ...prev.hud,
-                playerId: this.room ? this.room.sessionId : '',
-            },
+            meId: this.room?.sessionId || '',
         }));
 
         // Listen for state changes
@@ -283,7 +274,7 @@ export default class Match extends Component<IProps, IState> {
     // Utils
     //
     isPlayerIdMe = (playerId: string) => {
-        return this.state.hud.playerId === playerId;
+        return this.state.meId === playerId;
     };
 
     updateRoom = () => {
@@ -313,27 +304,14 @@ export default class Match extends Component<IProps, IState> {
             >
                 {/* Set page's title */}
                 <Helmet>
-                    <title>{`${hud.roomName} [${hud.playersCount}]`}</title>
+                    <title>{`${hud.game?.roomName} [${hud.players.length}]`}</title>
                 </Helmet>
 
                 {/* Where PIXI is injected */}
                 <div ref={this.canvasRef} />
 
                 {/* HUD: GUI, menu, leaderboard */}
-                <HUD
-                    playerId={hud.playerId}
-                    state={hud.state}
-                    stateEndsAt={hud.stateEndsAt}
-                    roomName={hud.roomName}
-                    playerName={hud.playerName}
-                    playerLives={hud.playerLives}
-                    playerMaxLives={hud.playerMaxLives}
-                    players={hud.players}
-                    playersCount={hud.playersCount}
-                    playersMaxCount={hud.playersMaxCount}
-                    messages={hud.messages}
-                    announce={hud.announce}
-                />
+                <HUD game={hud.game} players={hud.players} messages={hud.messages} announce={hud.announce} />
             </View>
         );
     }

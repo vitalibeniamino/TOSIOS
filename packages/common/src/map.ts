@@ -103,7 +103,7 @@ export class DungeonMap {
         const item = createItem(x, y, w, h, layer, type, id);
 
         this.items[item.id] = item;
-        this.rbush.load([this.items[item.id]]);
+        this.rbush.insert(this.items[item.id]);
 
         return item.id;
     };
@@ -120,12 +120,13 @@ export class DungeonMap {
 
     /** Update an item by id. */
     updateItem = (id: string, x: number, y: number): void => {
-        if (!this.items[id]) {
+        const item = this.items[id];
+        if (!item) {
             throw new Error(`Couldn't update a non exisiting item with id "${id}"`);
         }
 
-        this.items[id].x = x;
-        this.items[id].y = y;
+        item.x = x;
+        item.y = y;
     };
 
     /** Remove an item by id. */

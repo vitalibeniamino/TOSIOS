@@ -22,6 +22,10 @@ const ZINDEXES = {
 
 export type PlayerDirection = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
+export interface IPlayer extends Models.PlayerJSON {
+    isGhost: boolean;
+}
+
 export class Player extends Circle {
     //
     // Sync fields
@@ -34,7 +38,11 @@ export class Player extends Circle {
 
     private _maxLives: number = 0;
 
+    private _money: number = 0;
+
     private _rotation: number = 0;
+
+    public ack?: number;
 
     //
     // Local fields
@@ -55,8 +63,6 @@ export class Player extends Circle {
 
     private _livesSprite: PlayerLivesSprite;
 
-    public ack?: number;
-
     private _shadow: Graphics;
 
     private _particlesManager: ParticlesManager;
@@ -66,7 +72,7 @@ export class Player extends Circle {
     //
     // Lifecycle
     //
-    constructor(player: Models.PlayerJSON, isGhost: boolean, particlesManager: ParticlesManager) {
+    constructor(player: IPlayer, particlesManager: ParticlesManager) {
         super({
             id: player.id,
             x: player.x,
@@ -123,10 +129,10 @@ export class Player extends Circle {
         this.name = player.name;
         this.lives = player.lives;
         this.maxLives = player.maxLives;
-        this.isGhost = isGhost;
+        this.isGhost = player.isGhost;
 
         // Ghost
-        if (isGhost) {
+        if (player.isGhost) {
             this.visible = Constants.DEBUG;
             this.container.alpha = 0.5;
         }
@@ -261,6 +267,10 @@ export class Player extends Circle {
         this.updateTextures();
     }
 
+    set money(money: number) {
+        this._money = money;
+    }
+
     set rotation(rotation: number) {
         this._direction = getDirection(rotation);
 
@@ -321,6 +331,10 @@ export class Player extends Circle {
 
     get maxLives() {
         return this._maxLives;
+    }
+
+    get money() {
+        return this._money;
     }
 
     get rotation() {

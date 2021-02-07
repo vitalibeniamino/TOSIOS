@@ -1,134 +1,112 @@
-import { Health, Leaderboard, Menu, Messages, Players, Time } from './';
 import { Keys, Models } from '@tosios/common';
+import { Leaderboard, Menu, MenuButton, Messages, Players, Time } from './';
 import React, { CSSProperties } from 'react';
 import { Announce } from './Announce';
+import { IGame } from '../../game/entities/Game';
+import { IPlayer } from '../../game/entities/Player';
 import { View } from '../../components';
 import { isMobile } from 'react-device-detect';
 
 const HUD_PADDING = isMobile ? 16 : 24;
 
 export interface HUDProps {
-    state: Models.GameState;
-    stateEndsAt: number;
-    roomName: string;
-    playerId: string;
-    playerName: string;
-    playerLives: number;
-    playerMaxLives: number;
-    players: Models.PlayerJSON[];
-    playersCount: number;
-    playersMaxCount: number;
+    game?: IGame;
+    players: IPlayer[];
     messages: Models.MessageJSON[];
     announce?: string;
 }
 
 /**
- * The interface displaying important information to the user:
- * - Lives
- * - Time left
- * - Number of players
- * - Chat
- * - Leaderboard
- * - Menu
+ * The current game's HUD.
  */
-export const HUD = React.memo(
-    (props: HUDProps): React.ReactElement => {
-        const {
-            playerId,
-            state,
-            stateEndsAt,
-            roomName,
-            playerName,
-            playerLives,
-            playerMaxLives,
-            players,
-            playersCount,
-            playersMaxCount,
-            messages,
-            announce,
-        } = props;
-        const [leaderboardOpened, setLeaderboardOpened] = React.useState(false);
-        const [menuOpened, setMenuOpened] = React.useState(false);
+export const HUD = React.memo((props: HUDProps): React.ReactElement | null => {
+    const { game, players, messages, announce } = props;
+    const [leaderboardOpened, setLeaderboardOpened] = React.useState(false);
+    const [menuOpened, setMenuOpened] = React.useState(false);
 
-        const handleLeave = () => {
-            window.location.href = window.location.origin;
+    // Current player
+    const player: IPlayer = React.useMemo(() => {
+        return players.find((item) => item.isGhost) as IPlayer;
+    }, [players]);
+
+    // Create methods callbacks
+    const handleLeave = React.useCallback(() => {
+        window.location.href = window.location.origin;
+    }, []);
+
+    const handleKeyDown = React.useCallback((event: any) => {
+        const key = event.code;
+
+        if (Keys.LEADERBOARD.includes(key)) {
+            event.preventDefault();
+            event.stopPropagation();
+            setLeaderboardOpened(true);
+        }
+    }, []);
+
+    const handleKeyUp = React.useCallback((event: any) => {
+        const key = event.code;
+
+        if (Keys.LEADERBOARD.includes(key)) {
+            event.preventDefault();
+            event.stopPropagation();
+            setLeaderboardOpened(false);
+        }
+
+        if (Keys.MENU.includes(key)) {
+            event.preventDefault();
+            event.stopPropagation();
+            setMenuOpened((prev) => !prev);
+        }
+    }, []);
+
+    // Listen for key presses (and unlisten on unmount).
+    React.useEffect(() => {
+        window.document.addEventListener('keydown', handleKeyDown);
+        window.document.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            window.document.removeEventListener('keydown', handleKeyDown);
+            window.document.removeEventListener('keyup', handleKeyUp);
         };
+    }, [handleKeyDown, handleKeyUp]);
 
-        const handleKeyDown = (event: any) => {
-            const key = event.code;
+    if (!game || !player) {
+        return null;
+    }
 
-            if (Keys.LEADERBOARD.includes(key)) {
-                event.preventDefault();
-                event.stopPropagation();
-                setLeaderboardOpened(true);
-            }
-        };
+    return (
+        <View flex center fullscreen style={styles.hud}>
+            {/* Players (top-left) */}
+            <Players player={player} players={players} style={styles.players} />
 
-        const handleKeyUp = (event: any) => {
-            const key = event.code;
+            {/* Time (top-center) */}
+            <Time state={game.state} endsAt={game.stateEndsAt} style={styles.time} />
 
-            if (Keys.LEADERBOARD.includes(key)) {
-                event.preventDefault();
-                event.stopPropagation();
-                setLeaderboardOpened(false);
-            }
+            {/* Menu (top-right) */}
+            <MenuButton style={styles.menu} onMenuClicked={() => setMenuOpened(true)} />
 
-            if (Keys.MENU.includes(key)) {
-                event.preventDefault();
-                event.stopPropagation();
-                setMenuOpened((prev) => !prev);
-            }
-        };
+            {/* Messages (bottom-left) */}
+            {isMobile ? null : <Messages messages={messages} style={styles.messages} />}
 
-        // Listen for key presses (and unlisten on unmount).
-        React.useEffect(() => {
-            window.document.addEventListener('keydown', handleKeyDown);
-            window.document.addEventListener('keyup', handleKeyUp);
+            {/* Announce (center-center) */}
+            <Announce announce={announce} style={styles.announce} />
 
-            return () => {
-                window.document.removeEventListener('keydown', handleKeyDown);
-                window.document.removeEventListener('keyup', handleKeyUp);
-            };
-        }, []);
+            {/* Leaderboard */}
+            {leaderboardOpened ? <Leaderboard roomName={game.roomName} players={players} playerId={player.id} /> : null}
 
-        return (
-            <View flex center fullscreen style={styles.hud}>
-                {/* Health */}
-                <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
-
-                {/* Time */}
-                <Time state={state} endsAt={stateEndsAt} style={styles.time} />
-
-                {/* Players */}
-                <Players
-                    count={playersCount}
-                    maxCount={playersMaxCount}
-                    style={styles.players}
-                    onMenuClicked={() => setMenuOpened(true)}
-                />
-
-                {/* Messages */}
-                {isMobile ? null : <Messages messages={messages} style={styles.messages} />}
-
-                {/* Announce */}
-                <Announce announce={announce} style={styles.announce} />
-
-                {/* Leaderboard */}
-                {leaderboardOpened ? <Leaderboard roomName={roomName} players={players} playerId={playerId} /> : null}
-
-                {/* Menu */}
-                {menuOpened ? <Menu onClose={() => setMenuOpened(false)} onLeave={handleLeave} /> : null}
-            </View>
-        );
-    },
-);
+            {/* Menu */}
+            {menuOpened ? <Menu onClose={() => setMenuOpened(false)} onLeave={handleLeave} /> : null}
+        </View>
+    );
+});
 
 const styles: { [key: string]: CSSProperties } = {
     hud: {
         padding: HUD_PADDING,
         pointerEvents: 'none',
     },
-    health: {
+    players: {
         position: 'absolute',
         left: HUD_PADDING,
         top: HUD_PADDING,
@@ -138,7 +116,7 @@ const styles: { [key: string]: CSSProperties } = {
         top: HUD_PADDING,
         alignSelf: 'center',
     },
-    players: {
+    menu: {
         position: 'absolute',
         right: HUD_PADDING,
         top: HUD_PADDING,

@@ -1,4 +1,4 @@
-import { Bullet, Game, Monster, Player, Prop } from './entities';
+import { Bullet, Circle, Game, Monster, Player, Prop } from './entities';
 import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { MonsterType, PropType, TileType, generate } from '@halftheopposite/dungeon';
@@ -487,7 +487,7 @@ export class GameState extends Schema {
 
                 monster.hurt();
                 if (!monster.isAlive) {
-                    this.spawnCoins(monster.x, monster.y);
+                    this.spawnMonsterDrops(monster);
                     this.monsterRemove(monster.id);
                 }
             });
@@ -514,13 +514,16 @@ export class GameState extends Schema {
                 if (!Collisions.HURTABLE_PROPS.includes(item.type as PropType)) {
                     return;
                 }
+
                 const prop = this.props[item.id];
                 if (!prop) {
                     return;
                 }
 
                 prop.hurt();
+
                 if (!prop.isAlive) {
+                    this.spawnCrateDrops(prop);
                     this.propRemove(prop.id);
                 }
             });
@@ -570,48 +573,59 @@ export class GameState extends Schema {
         }
     }
 
-    private spawnCoins(fromX: number, fromY: number) {
-        const coinsCount = Maths.getRandomInt(0, 3);
+    private spawnMonsterDrops(prop: Prop) {
+        const coinsCount = Maths.getRandomInt(0, 2);
+        this.spawnProps(prop, PropType.Coin, coinsCount, Constants.PROP_COIN_SIZE, Constants.PROP_DROP_RADIUS);
+    }
 
-        const pointInDisk = () => {
-            const coords = Maths.randomPointInDisk(fromX, fromY, Constants.PROP_DROP_RADIUS);
+    private spawnCrateDrops(prop: Prop) {
+        const coinsCount = Maths.getRandomInt(1, 3);
+        const healthCount = Maths.getRandomInt(0, 1);
+        this.spawnProps(prop, PropType.Coin, coinsCount, Constants.PROP_COIN_SIZE, Constants.PROP_DROP_RADIUS);
+        this.spawnProps(prop, PropType.HealthSmall, healthCount, Constants.TILE_SIZE, Constants.PROP_DROP_RADIUS);
+    }
+
+    private spawnProps(circle: Circle, propType: PropType, count: number, propSize: number, spawnRadius: number) {
+        // Recursively finds a valid position to spawn a prop
+        const pointInDisk = (iterations: number) => {
+            // If we have done too many recursive calls, we force the position
+            if (iterations === 0) {
+                return { x: circle.x, y: circle.y };
+            }
+
+            const point = Maths.randomPointInDisk(circle.x, circle.y, spawnRadius);
             const item: Map.Item = {
                 id: '',
-                x: coords.x,
-                y: coords.y,
-                w: Constants.PROP_COIN_SIZE,
-                h: Constants.PROP_COIN_SIZE,
+                x: Math.floor(point.x),
+                y: Math.floor(point.y),
+                w: propSize,
+                h: propSize,
                 layer: 'props',
-                type: PropType.Coin,
+                type: propType,
             };
 
             const collides = this.map.collidesByItem(item, ['tiles', 'props']);
+
+            // If the prop collides, retry a new random position
             if (collides.length > 0) {
-                return pointInDisk();
+                return pointInDisk(iterations - 1);
             }
 
-            return coords;
+            return point;
         };
 
-        for (let i = 0; i < coinsCount; i++) {
-            const { x, y } = pointInDisk();
-            const propId = this.map.addItem(
-                fromX,
-                fromY,
-                Constants.PROP_COIN_SIZE,
-                Constants.PROP_COIN_SIZE,
-                'props',
-                PropType.Coin,
-            );
+        for (let i = 0; i < count; i++) {
+            const point = pointInDisk(10);
+            const propId = this.map.addItem(circle.x, circle.y, propSize, propSize, 'props', propType);
             const prop = new Prop({
                 id: propId,
-                x: fromX,
-                y: fromY,
+                x: circle.x,
+                y: circle.y,
                 rotation: 0,
-                radius: Constants.PROP_COIN_SIZE / 2,
-                type: PropType.Coin,
-                toX: Math.floor(x),
-                toY: Math.floor(y),
+                radius: propSize / 2,
+                type: propType,
+                toX: point.x,
+                toY: point.y,
             });
             this.props.set(propId, prop);
         }

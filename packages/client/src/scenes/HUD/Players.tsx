@@ -1,53 +1,54 @@
-import { Inline, Text } from '../../components';
 import React, { CSSProperties } from 'react';
-import { Container } from './';
-import { IconButton } from './IconButton';
-import { Menu } from '../../icons';
-import { isMobile } from 'react-device-detect';
+import { Space, View } from '../../components';
+import { IPlayer } from '../../game/entities/Player';
+import { Player } from './Player';
 
 /**
- * Render the players count.
+ * Render the current players in the game.
  */
-export const Players = React.memo(
-    (props: {
-        count?: number;
-        maxCount?: number;
-        style?: CSSProperties;
-        onMenuClicked: () => void;
-    }): React.ReactElement => {
-        const { count, maxCount, style, onMenuClicked: onMenuPressed } = props;
-        const playersText = isMobile ? `${count}/${maxCount}` : `Players (${count}/${maxCount})`;
+export function Players(props: {
+    player: IPlayer;
+    players: IPlayer[];
+    style?: CSSProperties;
+}): React.ReactElement | null {
+    const { player, players, style } = props;
 
-        return (
-            <Container
-                style={{
-                    ...styles.players,
-                    ...style,
-                }}
-            >
-                <Text style={styles.playersText}>{playersText}</Text>
-                <Inline size="xs" />
-                <IconButton
-                    icon={Menu}
-                    style={{
-                        ...styles.menuButton,
-                        ...(isMobile ? { width: 40, height: 40 } : {}),
-                    }}
-                    onClick={onMenuPressed}
-                />
-            </Container>
-        );
-    },
-);
+    const filteredPlayers = players.filter((item) => item.id !== player.id);
+
+    return (
+        <View style={{ ...styles.players, ...style }}>
+            {/* Current player */}
+            <Player
+                name={player.name}
+                lives={player.lives}
+                maxLives={player.maxLives}
+                money={player.money}
+                size="normal"
+                style={styles.health}
+            />
+            <Space size="s" />
+            {/* Other players */}
+            {filteredPlayers.map((item) => (
+                <>
+                    <Player
+                        key={item.id}
+                        name={item.name}
+                        lives={item.lives}
+                        maxLives={item.maxLives}
+                        money={item.money}
+                        size="small"
+                        style={styles.health}
+                    />
+                    <Space size="s" />
+                </>
+            ))}
+        </View>
+    );
+}
 
 const styles: { [key: string]: CSSProperties } = {
     players: {
-        flexDirection: 'row',
-        pointerEvents: 'all',
+        flexDirection: 'column',
+        alignItems: 'center',
     },
-    playersText: {
-        color: 'white',
-        fontSize: isMobile ? 14 : 16,
-    },
-    menuButton: {},
 };

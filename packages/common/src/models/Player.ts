@@ -9,6 +9,7 @@ export interface PlayerJSON extends CircleJSON {
     name: string;
     lives: number;
     maxLives: number;
+    money: number;
     ack?: number;
 }
 

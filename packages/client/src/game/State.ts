@@ -4,6 +4,8 @@ import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from '.
 import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { PropType, generate } from '@halftheopposite/dungeon';
 import { GUITextures } from './assets/images';
+import { IGame } from './entities/Game';
+import { IPlayer } from './entities/Player';
 import { Inputs } from './utils/inputs';
 import { ParticlesManager } from './managers/ParticlesManager';
 import { Viewport } from 'pixi-viewport';
@@ -30,16 +32,9 @@ const ZINDEXES = {
 const TOREMOVE_MAX_FPS_MS = 1000 / 60;
 const TOREMOVE_AVG_LAG = 50;
 
-export interface Stats {
-    state: Models.GameState;
-    stateEndsAt: number;
-    roomName?: string;
-    playerName: string;
-    playerLives: number;
-    playerMaxLives: number;
-    players: Models.PlayerJSON[];
-    playersCount: number;
-    playersMaxCount: number;
+export interface GameStats {
+    game: IGame;
+    players: IPlayer[];
 }
 
 export interface IGameState {
@@ -535,12 +530,12 @@ export class GameState {
     // Players
     //
     playerAdd = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
-        const player = new Player(attributes, isMe, this.particlesManager);
+        const player = new Player({ ...attributes, isGhost: isMe }, this.particlesManager);
         this.playersManager.add(playerId, player);
         this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
 
         if (isMe) {
-            this.me = new Player(attributes, false, this.particlesManager);
+            this.me = new Player({ ...attributes, isGhost: false }, this.particlesManager);
             this.playersManager.add(ME_ID, this.me);
             this.viewport.follow(this.me.container);
 
@@ -557,6 +552,7 @@ export class GameState {
         // Update the player normally (or the current player's ghost)
         player.lives = attributes.lives;
         player.maxLives = attributes.maxLives;
+        player.money = attributes.money;
         player.rotation = attributes.rotation;
         player.setPosition(player.toX, player.toY);
         player.setToPosition(attributes.x, attributes.y);
@@ -565,6 +561,7 @@ export class GameState {
         if (isMe && this.me) {
             this.me.lives = attributes.lives;
             this.me.maxLives = attributes.maxLives;
+            this.me.money = attributes.money;
 
             if (this.me.ack !== attributes.ack && attributes.ack === 0) {
                 this.me.setPosition(attributes.x, attributes.y);
@@ -796,29 +793,24 @@ export class GameState {
         );
     };
 
-    getStats = (): Stats => {
-        const players: Models.PlayerJSON[] = this.playersManager.getAll().map((player) => ({
-            type: player.type,
+    getStats = (): GameStats => {
+        const players: IPlayer[] = this.playersManager.getAll().map((player) => ({
             id: player.id,
             x: player.x,
             y: player.y,
             radius: player.body.radius,
             rotation: player.rotation,
+            type: player.type,
             name: player.name,
             lives: player.lives,
             maxLives: player.maxLives,
+            money: player.money,
+            isGhost: player.isGhost,
         }));
 
         return {
-            state: this.game.state,
-            stateEndsAt: this.game.stateEndsAt,
-            roomName: this.game.roomName,
-            playerName: this.me ? this.me.name : '',
-            playerLives: this.me ? this.me.lives : 0,
-            playerMaxLives: this.me ? this.me.maxLives : 0,
+            game: this.game,
             players,
-            playersCount: players.length,
-            playersMaxCount: this.game.maxPlayers,
         };
     };
 }

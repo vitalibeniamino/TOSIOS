@@ -1,8 +1,6 @@
-import { Bullet } from './Bullet';
-import { Circle } from './Circle';
-import { Game } from './Game';
-import { Monster } from './Monster';
-import { Player } from './Player';
-import { Prop } from './Prop';
-
-export { Circle, Bullet, Game, Monster, Player, Prop };
+export * from './Bullet';
+export * from './Circle';
+export * from './Game';
+export * from './Monster';
+export * from './Player';
+export * from './Prop';

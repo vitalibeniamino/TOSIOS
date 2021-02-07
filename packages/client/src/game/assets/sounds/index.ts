@@ -1,27 +1,24 @@
 import { Howl, Howler } from 'howler';
 
-const explosion = require('./explosion.ogg');
-const fire = require('./fire.ogg');
+const coin = require('./coin.ogg');
 const footstep = require('./footstep.ogg');
 
 Howler.volume(1.0);
 
-const ExplosionSound = new Howl({
-    src: [explosion],
+const CoinSound = new Howl({
+    src: [coin],
     loop: false,
     preload: true,
-});
-
-const FireSound = new Howl({
-    src: [fire],
-    loop: true,
-    preload: true,
+    autoplay: false,
+    volume: 0.3,
 });
 
 const FootstepSound = new Howl({
     src: [footstep],
-    loop: true,
+    loop: false,
     preload: true,
+    autoplay: false,
+    volume: 0.3,
 });
 
-export { ExplosionSound, FireSound, FootstepSound };
+export { CoinSound, FootstepSound };

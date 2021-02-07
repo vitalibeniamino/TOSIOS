@@ -34,7 +34,7 @@ export class Bullet extends Circle {
             y: bullet.y,
             radius: bullet.radius,
             rotation: bullet.rotation,
-            textures: WeaponTextures.fire,
+            textures: [WeaponTextures.staff],
             zIndex: ZINDEXES.BULLET,
         });
 

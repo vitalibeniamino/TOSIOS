@@ -1,13 +1,17 @@
 import { Application, Container, SCALE_MODES, settings, utils } from 'pixi.js';
-import { Bullet, Game, Monster, Player, Prop } from './entities';
-import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
+import { Bullet, Game, IGame, IPlayer, Monster, Player, Prop } from './entities';
+import {
+    BulletsManager,
+    MonstersManager,
+    ParticlesManager,
+    PlayersManager,
+    PropsManager,
+    SoundManager,
+} from './managers';
 import { Collisions, Constants, Geometry, Map, Maps, Maths, Models } from '@tosios/common';
 import { PropType, generate } from '@halftheopposite/dungeon';
 import { GUITextures } from './assets/images';
-import { IGame } from './entities/Game';
-import { IPlayer } from './entities/Player';
 import { Inputs } from './utils/inputs';
-import { ParticlesManager } from './managers/ParticlesManager';
 import { Viewport } from 'pixi-viewport';
 import { drawTiles } from './utils/tiles';
 
@@ -70,6 +74,8 @@ export class GameState {
     private bulletsManager: BulletsManager;
 
     private particlesManager: ParticlesManager;
+
+    private soundManager: SoundManager;
 
     private onActionSend: (action: Models.ActionJSON) => void;
 
@@ -147,6 +153,9 @@ export class GameState {
         this.bulletsManager = new BulletsManager();
         this.bulletsManager.zIndex = ZINDEXES.BULLETS;
         this.viewport.addChild(this.bulletsManager);
+
+        // Sound
+        this.soundManager = new SoundManager();
 
         // Callbacks
         this.onActionSend = attributes.onActionSend;
@@ -402,6 +411,9 @@ export class GameState {
 
         // Update in map
         this.map.updateItem(ME_ID, this.me.x, this.me.y);
+
+        // Play sound
+        this.soundManager.play('step');
     };
 
     private rotate = () => {
@@ -530,12 +542,18 @@ export class GameState {
     // Players
     //
     playerAdd = (playerId: string, attributes: Models.PlayerJSON, isMe: boolean) => {
-        const player = new Player({ ...attributes, isGhost: isMe }, this.particlesManager);
+        const player = new Player(
+            { ...attributes, isGhost: isMe },
+            { sound: this.soundManager, particles: this.particlesManager },
+        );
         this.playersManager.add(playerId, player);
         this.map.addItem(player.x, player.y, player.width, player.height, 'players', player.type, player.id);
 
         if (isMe) {
-            this.me = new Player({ ...attributes, isGhost: false }, this.particlesManager);
+            this.me = new Player(
+                { ...attributes, isGhost: false },
+                { sound: this.soundManager, particles: this.particlesManager },
+            );
             this.playersManager.add(ME_ID, this.me);
             this.viewport.follow(this.me.container);
 

@@ -1,9 +1,9 @@
 import { Constants, Models } from '@tosios/common';
 import { Effects, PlayerLivesSprite, TextSprite } from '../sprites';
 import { Graphics, Sprite, Texture } from 'pixi.js';
+import { ParticlesManager, SoundManager } from '../managers';
 import { PlayerTextures, WeaponTextures } from '../assets/images';
 import { Circle } from '.';
-import { ParticlesManager } from '../managers/ParticlesManager';
 
 const NAME_OFFSET = 4;
 const LIVES_OFFSET = 10;
@@ -65,6 +65,8 @@ export class Player extends Circle {
 
     private _shadow: Graphics;
 
+    private _soundManager: SoundManager;
+
     private _particlesManager: ParticlesManager;
 
     private _lastSmokeAt: number = 0;
@@ -72,7 +74,7 @@ export class Player extends Circle {
     //
     // Lifecycle
     //
-    constructor(player: IPlayer, particlesManager: ParticlesManager) {
+    constructor(player: IPlayer, managers: { sound: SoundManager; particles: ParticlesManager }) {
         super({
             id: player.id,
             x: player.x,
@@ -118,8 +120,9 @@ export class Player extends Circle {
         // Sort rendering order
         this.container.sortChildren();
 
-        // Reference to the particles container
-        this._particlesManager = particlesManager;
+        // References to the managers
+        this._soundManager = managers.sound;
+        this._particlesManager = managers.particles;
 
         // Player
         this.type = player.type;
@@ -268,6 +271,14 @@ export class Player extends Circle {
     }
 
     set money(money: number) {
+        if (this._money === money) {
+            return;
+        }
+
+        if (money > this._money) {
+            this._soundManager.play('coin');
+        }
+
         this._money = money;
     }
 

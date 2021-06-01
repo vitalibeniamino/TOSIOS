@@ -1,0 +1,23 @@
+version: "3.9"	
+
+services:	
+  dungeonkill_test:	
+    image: halftheopposite/tosios:latest
+    networks:
+      - dungeonkilltest-network
+    ports:
+      - target: 3001
+        published: 3003
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - node.labels.testingserver
+
+networks:
+  dungeonkilltest-network:
+    external: true

@@ -1,0 +1,20 @@
+version: "3.9"	
+
+services:	
+  dungeonkill:	
+    image: halftheopposite/tosios:latest
+    networks:
+      - dungeonkill-network
+    ports:
+      - target: 3001
+        published: 3001
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 2
+      endpoint_mode: dnsrr
+
+networks:
+  dungeonkill-network:
+    external: true

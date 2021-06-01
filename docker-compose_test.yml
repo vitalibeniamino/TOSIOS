@@ -16,7 +16,7 @@ services:
       endpoint_mode: dnsrr
       placement:
         constraints:
-          - node.labels.testingserver
+          - node.labels.testingserver=true
 
 networks:
   dungeonkilltest-network:
